@@ -140,17 +140,8 @@ Tagging works differently from naming. `Project`, `Environment`, `Owner`, and `M
 
 `dev` and `prod` are separate root configs, each with its own Terraform state (same S3 bucket, different state key) — a mistake in one can never touch the other. Both call **identical module code**; only input values differ.
 
-This project runs on a free-tier AWS account, which directly shaped several defaults:
+This project runs on a free-tier AWS account.
 
-| Feature | Free-tier coverage | Approach taken |
-| --- | --- | --- |
-| NAT Gateway | None at all | Off by default; one shared gateway (not per-AZ) if ever turned on |
-| RDS Multi-AZ | Not covered | Off by default |
-| RDS / EC2 instance hours | 750 hrs/month, smallest instance class | Same smallest class in both environments; avoid running both simultaneously for long periods |
-| ECS Fargate | No free tier at all | Avoided entirely — `compute-ecs` uses the EC2 launch type instead |
-| S3, IAM, Glue Catalog, Athena (small data) | Free or negligible | No real constraint |
-
-For the genuinely paid features (Multi-AZ, per-AZ NAT), the module still supports them fully as variables — they're proven with a temporary `apply`, confirmed working, then `destroy`, rather than left running continuously.
 
 ## Consumer example and expected outputs
 
@@ -219,7 +210,7 @@ Running `terraform output` after `apply` should return:
 
 ### Proof of deployment
 
-Screenshots of `terraform plan` and `terraform apply` for each capability, and the functional tests that prove each one actually works end to end (not just that Terraform reported success):
+Screenshots of `terraform plan` and `terraform apply` for each capability, and the functional tests that prove each one actually works end-to-end (not just that Terraform reported success):
 
 **Networking**
 `![networking plan](screenshots/networking-plan.png)`
