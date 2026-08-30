@@ -71,7 +71,6 @@ The table above is the quick-scan version. Full reasoning, inputs, outputs, and 
 - **Cost note:** `data_classification = "sensitive"` creates a dedicated KMS key at a flat **$1/month regardless of use** — use `"internal"` or `"public"` unless you specifically need it.
 - **Out of scope (v1):** cross-region replication, static website hosting.
 
-
 #### Compute — `modules/compute-ec2`, `modules/compute-ecs`
 
 - **The ask:** run an application, correctly networked and permissioned, without wiring subnets/security groups/IAM roles by hand.
@@ -108,8 +107,8 @@ resource "aws_s3_object" "test_orders" {
   etag = filemd5("${path.module}/../../docs/test_data/orders.csv")
 }
 ```
-Each environment uses the s3 resource above to upload data a file to the s3 bucket, which is then used by the data-platform to produce queries and results.
 
+Each environment uses the s3 resource above to upload data a file to the s3 bucket, which is then used by the data-platform to produce queries and results.
 
 ## Repository structure
 
@@ -139,7 +138,6 @@ module "database" {
 
 Declaring the owner, and purpose of the database, and properly setting up the VPC, subnet and security group by running the networking module produce a fully working database with a unique name alongside other components without having to understand the backend of the module. Every security decision, gateway type, type of subnet used is made by the interconnected modules, not the consumer.
 
-
 ```hcl
 module "raw_data" {
   source = "../../modules/s3"
@@ -151,7 +149,6 @@ module "raw_data" {
 
 Two lines of intent (`purpose`, `data_classification`) produce a fully encrypted, versioned, lifecycle-managed, public-access-blocked s3 bucket — every security decision is made by the module, not the consumer.
 
-
 ```hcl
 module "analytics" {
   source = "../../modules/data-platform"
@@ -162,9 +159,8 @@ module "analytics" {
   source_prefix = "orders/"
 }
 ```
+
 The consumer provides the owner, name of the data platform, purpose of the data platform, and source_prefix to produce fully interconnected services from s3 bucket with an uploaded file, Glue with catalog and database, athena for querying the table and saving the results in another s3 bucket. It also relies heavily on a granular level IAM roles and policy for security and access control. All these are taken care of by the module backend, not the consumer
-
-
 
 ## Naming and tagging
 
@@ -174,7 +170,6 @@ Every resource follows **`{project}-{environment}-{resource_type}-{purpose}`** �
 - When one module composes another internally (`data-platform` calling `storage-s3`, or a compute module calling `iam`), the nested module inherits the **caller's** identity rather than computing its own — e.g. a role created on behalf of `compute-ecs` is grouped under the `ecs` capability, not `iam`. That way everything belonging to one workload is easy to find together.
 
 Tagging works differently from naming. `Project`, `Environment`, `Owner` are applied automatically via each environment's `default_tags` provider setting — no module or consumer sets them by hand. `Resource_type` and `Purpose` are deliberately **not** separate tags: `default_tags` is one fixed map per environment, so it can't vary per module call. That identity is captured in the resource name instead, which is why the naming convention above carries real information.
-
 
 ## Environments and free-tier strategy
 
@@ -187,9 +182,7 @@ This project runs on a free-tier AWS account.
 - Terraform ≥ 1.9 (≥ 1.10 to use native S3 state locking as configured) and AWS provider `~> 6.0`.
 - One engineer/small team operating the platform at a time — no multi-team concurrent-apply tooling beyond Terraform's own state locking.
 
-
-
-## Consumer example and expected outputs
+## Environment and its modules
 
 Both environments (`environments/dev` and identically, `environments/prod`) composes five capabilities into one realistic stack: a network, a containerised web app, a private database, a raw-data bucket, and an analytics layer over that data.
 
@@ -240,7 +233,6 @@ resource "aws_s3_object" "test_orders" {
   etag = filemd5("${path.module}/../../docs/test_data/orders.csv")
 }
 
-
 module "analytics" {
   source = "../../modules/data-platform"
   name_prefix = "${var.project}-${var.environment}-data"
@@ -264,54 +256,150 @@ Running `terraform output` after `terrform plan` and `terraform apply` should re
 | `raw_data_bucket_name` | The bucket the analytics pipeline reads from |
 | `glue_database_name`, `athena_workgroup_name` | Where to run SQL queries against the raw data |
 
+## Consumer example and expected outputs
+
+We have 2 consumer examples; which are the Application Engineering and Data engineering team
+
+**Application Engineering**
+This consumer composes of three capabilities into one realistic stack: a network, a containerised web app, and a private database.
+This team owns "Web applications, Microservices" — nothing about data, nothing about analytics. So their whole world is three module calls: a network to run in, somewhere to run the container, and a database behind it.
+
+```hcl
+module "networking" {
+  source = "../../modules/networking"
+  name_prefix = "${var.project}-${var.environment}-net"
+  enable_nat_gateway = false
+}
+
+module "webapp" {
+  source = "../../modules/ecs"
+  name_prefix = "${var.project}-${var.environment}-ecs"
+  purpose = "webapp"
+  vpc_id = module.networking.vpc_id
+  subnet_ids = module.networking.public_subnet_ids
+  instance_type = "t3.micro"
+  min_size = 1
+  max_size = 1
+  desired_capacity = 1
+  container_image = "public.ecr.aws/nginx/nginx:latest"
+  container_port = 80
+  allowed_ingress_cidr = "0.0.0.0/0"
+}
+
+module "database" {
+  source = "../../modules/rds"
+  name_prefix = "${var.project}-${var.environment}-rds"
+  purpose = "webapp"
+  vpc_id = module.networking.vpc_id
+  subnet_ids = module.networking.private_subnet_ids
+  app_security_group_id  = module.webapp.instance_sg_id
+}
+
+```
+
+**Data Engineering**
+
+this team owns "Data ingestion, Data processing, Analytics" — that's storage-s3 (where ingested data lands) and data-platform (the crawler, catalog, and Athena workgroup that turn raw files into something queryable). No networking, no compute, no database — Glue, Athena, and S3 are regional services, never VPC-scoped.
+
+```hcl
+module "raw_data" {
+  source = "../../modules/storage-s3"
+  name_prefix  = "${var.project}-${var.environment}-s3"
+  purpose = "raw-data"
+  data_classification = "internal"
+}
+
+resource "aws_s3_object" "students" {
+  bucket = module.raw_data.bucket_name
+  key = "school/class/student.csv"
+  source = "${path.module}/../../docs/test_data/student.csv"
+  etag = filemd5("${path.module}/../../docs/test_data/student.csv")
+}
+
+module "analytics" {
+  source = "../../modules/data-platform"
+  name_prefix = "${var.project}-${var.environment}-data"
+  purpose = "class-register"
+  source_bucket_arn = module.raw_data.bucket_arn
+  source_bucket_name = module.raw_data.bucket_name
+  source_prefix = "class/"
+}
+```
 
 ### Proof of deployment
 
 Screenshots of `terraform plan` and `terraform apply` for each capability, and the functional tests that prove each one actually works end-to-end (not just that Terraform reported success):
 
 **Networking**
+
 `![Networking Plan](docs/images/terraform-plan-dev-net.png)`
+
 `![Networking Apply](docs/images/terraform-apply-networking.png)`
+
 `![Networking Validate](docs/images/terraform_validate-for-networking-dev.png)`
+
 `![IAM Terraform Plan](docs/images/iam_terraform_plan.png)`
+
 `![IAM Terraform Apply](docs/images/iam_terraform-apply.png)`
 
 **IAM** — standalone validation test proving the least-privilege guardrail rejects a wildcard, then a real role created and destroyed
+
 `![iam guardrail rejection](docs/images/iam_wildcard_error.png)`
+
 `![iam role created](docs/images/Iam_role_created_inline.png)`
+
 `![iam policy created](docs/images/iam_role_policy_created.png)`
+
 `![iam terraform](docs/images/iam-terraform-show.png)`
 
 **Compute (webapp)** — showing terraform plan, apply, and AWS outputs via Console
 `![compute-ecs apply](docs/images/ecs-terraform-apply.png)`
+
 `![compute-ecs plan](docs/images/ecs-terraform-plan.png)`
+
 `![compute-ecs plan](docs/images/ecs-terraform-plan1.png)`
+
 `![compute-ecs instances created on AWS console](docs/images/ec2-ecs-instance-aws.png)`
+
 `![compute-ecs Cluster on AWS console](docs/images/ecs-cluster-aws.png)`
+
 `![compute-ecs task definition](docs/images/ecs-task-def-aws.png)`
+
 `!Private Subnet](docs/images/private-subnet-1.png)`
+
 `![athena plan](docs/images/public-subnet-0.png)`
 
 **Database** — apply output, then a successful connection made *from inside* the VPC (proving it is genuinely not publicly reachable)
+
 `![database-rds apply](docs/images/rds-apply.png)`
+
 `![database-rds plan](docs/images/rds-plan.png)`
+
 `![database-rds AWS Console](docs/images/rds-db-aws.png)`
+
 `![database-rds Snapshot](docs/images/rds_snapshot_aws.png)`
 
-
 **Storage & Data Platform** — apply output, then the crawler run and an Athena query returning real rows from the sample data
+
 `![athena plan](docs/images/s3_athena_dev_plan.png)`
+
 `![Crawlers Glue](docs/images/crawlers_glue.png)`
+
 `![athena s3 raw data](docs/images/s3_athena_raw_data-dev.png)`
+
 `![athena glue](docs/images/s3_athena_glue_dev.png)`
+
 `![table glue](docs/images/table_glue.png)`
+
 `![order table](docs/images/athena_table_orders.png)`
+
 `![athena query results](docs/images/athena_orders_query.png)`
 
 **Applying Terraform Destroy**
-`![Terraform destroy for Database module](docs/images/terraform-destroy-module-database.png)`
-`![Terraform destroy for My App module](docs/images/terraform-destroy-module-my_app.png)`
 
+`![Terraform destroy for Database module](docs/images/terraform-destroy-module-database.png)`
+
+`![Terraform destroy for My App module](docs/images/terraform-destroy-module-my_app.png)`
 
 ## Security considerations
 
@@ -324,10 +412,9 @@ Screenshots of `terraform plan` and `terraform apply` for each capability, and t
 - VPC flow logs and CloudWatch logging are on by default across networking and compute.
 - Every AWS-service-facing role (VPC flow logs, ECS container instances, the Glue crawler) is scoped narrowly to exactly what that one function needs — never a shared, broad role.
 
-
 ## Architecture
 
-`![COB architecture](docs/images/terraform_arch.drawio.png)`.
+`![COB architecture](docs/images/terraform_arch.drawio.png)`
 
 The diagram groups infrastructure into two independent stacks — an application stack (networking, compute, database) and a data stack (storage, Glue, Athena) — with IAM shown as the cross-cutting component providing scoped access into both, rather than as a single generic role.
 
@@ -335,7 +422,6 @@ The two arrows are the only relationships drawn, and both are real, specific one
 The S3 → Glue → Athena chain is literally the pipeline order to upload files, create catalog, crawl them and save the queries and result.
 
 This diagram is the same for all environment, since both environments call identical module code, the shape of the architecture never changes between them; only sizing and some internal details would differ.
-
 
 ## Architectural decisions and trade-offs
 
@@ -349,31 +435,29 @@ This diagram is the same for all environment, since both environments call ident
 | `storage-s3` generates its own unique bucket-name suffix | Removes AWS's global-uniqueness constraint from the consumer entirely, rather than making them solve it |
 | `data-platform` composes `s3` for its Athena results bucket | Proves genuine module reusability — the platform consumes its own capabilities the same way an external team would |
 
-
-
 ## Known limitations
 
 - RDS uses the AWS default parameter group; a custom one is out of scope for v1.
 - Long generated resource names are not automatically truncated or hashed against AWS length limits — untested beyond this project's short prefixes.
 - `ecs` (EC2 launch type) maps a fixed host port in bridge networking mode, so only one task can run per EC2 instance at a time.
-- Each capability's narrower out-of-scope items (no VPN/Transit Gateway, no cross-account IAM, no read replicas, no Lake Formation, etc.) are listed alongside that capability under [Capability details](#capability-details) above.
-
+- Each capability's narrower out-of-scope items (no VPN/Transit Gateway, no cross-account IAM, no read replicas, no Lake Formation.)
 
 ## Getting started
+
 Follow the steps below accordingly:
 
 1. Create and lock down the one-time Terraform state bucket (versioned, encrypted, public access blocked).
  A. Choose a globally unique s3 bucket name
  B. run the following to configure the bucket, replace bucket name where needed:
+
  `aws s3api create-bucket --bucket YOUR-BUCKET-NAME --region eu-north-1 --create-bucket-configuration LocationConstraint=eu-north-1`
 
  `aws s3api put-bucket-versioning --bucket YOUR-BUCKET-NAME --versioning-configuration Status=Enabled`
 
-`aws s3api put-bucket-encryption --bucket YOUR-BUCKET-NAME --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'`
+`aws s3api put-bucket-encryption --bucket YOUR-BUCKET-NAME --server-side-encryption-configuration '{"Rules" [{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'`
 
 `aws s3api put-public-access-block --bucket YOUR-BUCKET-NAME --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true`
 
-2. run this in both environment: `cd environments/<environment-name> && terraform init`.
+1. run this in both environment: `cd environments/<environment-name> && terraform init`.
 
-3. `terraform plan`, review it against the expected resource list, then `terraform apply`.
-
+2. `terraform plan`, review it against the expected resource list, then `terraform apply`.
