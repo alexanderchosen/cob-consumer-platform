@@ -24,7 +24,7 @@ module "test_ec2" {
    }
 
 
-# since it is not in the prod environment, I increased the max_size and desired_capacity to create more instances
+# since it is now in the prod environment, I increased the max_size and desired_capacity to create more instances
 module "my_app" {
   source = "../../modules/ecs"
   name_prefix = "${var.project}-${var.environment}-ecs"
