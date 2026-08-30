@@ -333,18 +333,30 @@ Screenshots of `terraform plan` and `terraform apply` for each capability, and t
 **Networking**
 
 `![Networking Plan](docs/images/terraform-plan-dev-net.png)`
+<img width="1807" height="1022" alt="iam_terraform_plan" src="https://github.com/user-attachments/assets/bdb6958b-fa92-461b-aed5-4adfbb911333" />
+
 
 `![Networking Apply](docs/images/terraform-apply-networking.png)`
+<img width="796" height="680" alt="terraform-apply-networking" src="https://github.com/user-attachments/assets/0dce989e-bedf-4c91-845b-a47b78227e1b" />
+
 
 `![Networking Validate](docs/images/terraform_validate-for-networking-dev.png)`
+<img width="797" height="525" alt="terraform_validate-for-networking-dev" src="https://github.com/user-attachments/assets/dd224c79-3fbb-41d6-98e0-635ce5e6807a" />
+
 
 `![IAM Terraform Plan](docs/images/iam_terraform_plan.png)`
+<img width="1807" height="1022" alt="iam_terraform_plan" src="https://github.com/user-attachments/assets/7654208a-192a-458f-9ef9-fa5d29ff7544" />
+
 
 `![IAM Terraform Apply](docs/images/iam_terraform-apply.png)`
+<img width="1920" height="1020" alt="iam_terraform-apply" src="https://github.com/user-attachments/assets/497e8e01-1609-4457-8fbc-d795628d7e16" />
+
 
 **IAM** — standalone validation test proving the least-privilege guardrail rejects a wildcard, then a real role created and destroyed
 
 `![iam guardrail rejection](docs/images/iam_wildcard_error.png)`
+<img width="1920" height="1020" alt="iam_wildcard_error" src="https://github.com/user-attachments/assets/d2e6ae48-a5e9-4a37-b226-5d2411e27e8f" />
+
 
 `![iam role created](docs/images/Iam_role_created_inline.png)`
 
