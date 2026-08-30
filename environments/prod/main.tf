@@ -13,7 +13,6 @@ module "test_role" {
     s3_read_arn = ["arn:aws:s3:::cob-iam-test/*"]
    }
 
-
 module "test_ec2" {
     source = "../../modules/ec2"
     name_prefix = "${var.project}-${var.environment}-ec2"
@@ -40,7 +39,6 @@ module "my_app" {
   allowed_ingress_cidr = "0.0.0.0/0"
 }
 
-
 module "database" {
   source = "../../modules/rds"
   name_prefix = "${var.project}-${var.environment}-rds"
@@ -49,7 +47,6 @@ module "database" {
   subnet_ids = module.networking.private_subnet_ids
   app_security_group_id = module.my_app.instance_sg_id
 }
-
 
 module "raw_data" {
   source = "../../modules/s3"
