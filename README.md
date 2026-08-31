@@ -56,7 +56,7 @@ The table above is the quick-scan version. Full reasoning, inputs, outputs, and 
 #### Identity & access — `modules/iam`
 
 - **The ask:** let a workload talk to the AWS services it needs — nothing more.
-- **Key inputs:** `name_prefix`, `purpose`, `trusted_service` (`ecs-tasks`/`ec2`), `s3_read_arns`, `s3_write_arns`, `secrets_read_arns`
+- **Key inputs:** `name_prefix`, `purpose`, `trusted_service` (`ecs-tasks`/`ec2`), `s3_read_arn`, `s3_write_arn`, `secrets_read_arn`
 - **Key outputs:** `role_arn`, `role_name`, `instance_profile_name`
 - **Secure by default:** a validation block physically rejects a wildcard (`"*"`) resource ARN at `plan` time — least privilege is enforced in code, not left as a guideline.
 - **Out of scope (v1):** federated/SSO roles, cross-account access.
@@ -64,7 +64,7 @@ The table above is the quick-scan version. Full reasoning, inputs, outputs, and 
 #### Object storage — `modules/storage-s3`
 
 - **The ask:** give a team somewhere safe to put data, matched to how sensitive it is.
-- **Key inputs:** `name_prefix`, `purpose`, `data_classification` (`public`/`internal`/`sensitive`), `lifecycle_days`, `enable_versioning`
+- **Key inputs:** `name_prefix`, `purpose`, `data_classification` (`public`/`internal`), `lifecycle_days`, `enable_versioning`
 - **Key outputs:** `bucket_id`, `bucket_arn`, `bucket_name`, `kms_key_arn`
 - **Secure by default:** public access is blocked unconditionally (not a variable); encryption is always on; a lifecycle rule expires both current *and* old object versions, so cost doesn't grow unbounded.
 - **Trade-off:** S3 bucket names must be globally unique across all of AWS, so the module appends a random suffix itself — the consumer never has to solve AWS's uniqueness problem by hand.
@@ -261,6 +261,7 @@ Running `terraform output` after `terrform plan` and `terraform apply` should re
 We have 2 consumer examples; which are the Application Engineering and Data engineering team
 
 **Application Engineering**
+
 This consumer composes of three capabilities into one realistic stack: a network, a containerised web app, and a private database.
 This team owns "Web applications, Microservices" — nothing about data, nothing about analytics. So their whole world is three module calls: a network to run in, somewhere to run the container, and a database behind it.
 
@@ -330,88 +331,177 @@ module "analytics" {
 
 Screenshots of `terraform plan` and `terraform apply` for each capability, and the functional tests that prove each one actually works end-to-end (not just that Terraform reported success):
 
-**Networking**
+#### Networking Module
 
-`![Networking Plan](docs/images/terraform-plan-dev-net.png)`
+
 <img width="1807" height="1022" alt="iam_terraform_plan" src="https://github.com/user-attachments/assets/bdb6958b-fa92-461b-aed5-4adfbb911333" />
 
+**Networking Plan Output**
 
-`![Networking Apply](docs/images/terraform-apply-networking.png)`
+
 <img width="796" height="680" alt="terraform-apply-networking" src="https://github.com/user-attachments/assets/0dce989e-bedf-4c91-845b-a47b78227e1b" />
 
+**Networking Apply Output**
 
-`![Networking Validate](docs/images/terraform_validate-for-networking-dev.png)`
+
 <img width="797" height="525" alt="terraform_validate-for-networking-dev" src="https://github.com/user-attachments/assets/dd224c79-3fbb-41d6-98e0-635ce5e6807a" />
 
+**Networking Validate Output**
 
-`![IAM Terraform Plan](docs/images/iam_terraform_plan.png)`
+
 <img width="1807" height="1022" alt="iam_terraform_plan" src="https://github.com/user-attachments/assets/7654208a-192a-458f-9ef9-fa5d29ff7544" />
 
+**IAM Terraform Plan Output**
 
-`![IAM Terraform Apply](docs/images/iam_terraform-apply.png)`
+
 <img width="1920" height="1020" alt="iam_terraform-apply" src="https://github.com/user-attachments/assets/497e8e01-1609-4457-8fbc-d795628d7e16" />
 
+**IAM Terraform Apply**
 
-**IAM** — standalone validation test proving the least-privilege guardrail rejects a wildcard, then a real role created and destroyed
 
-`![iam guardrail rejection](docs/images/iam_wildcard_error.png)`
+
+#### IAM — standalone validation test proving the least-privilege guardrail rejects a wildcard, then a real role created and destroyed
+
+
+
 <img width="1920" height="1020" alt="iam_wildcard_error" src="https://github.com/user-attachments/assets/d2e6ae48-a5e9-4a37-b226-5d2411e27e8f" />
 
+**IAM Wildcard Error**
 
-`![iam role created](docs/images/Iam_role_created_inline.png)`
 
-`![iam policy created](docs/images/iam_role_policy_created.png)`
+<img width="1920" height="1020" alt="Iam_role_created_inline" src="https://github.com/user-attachments/assets/84abff32-c59c-498f-837f-234606d25223" />
 
-`![iam terraform](docs/images/iam-terraform-show.png)`
+**IAM role_created**
 
-**Compute (webapp)** — showing terraform plan, apply, and AWS outputs via Console
-`![compute-ecs apply](docs/images/ecs-terraform-apply.png)`
 
-`![compute-ecs plan](docs/images/ecs-terraform-plan.png)`
+<img width="1920" height="1020" alt="iam_role_policy_created" src="https://github.com/user-attachments/assets/7fb5b5ee-9632-4a6c-8663-24e59b4363ac" />
 
-`![compute-ecs plan](docs/images/ecs-terraform-plan1.png)`
+**IAM Role Policy**
 
-`![compute-ecs instances created on AWS console](docs/images/ec2-ecs-instance-aws.png)`
 
-`![compute-ecs Cluster on AWS console](docs/images/ecs-cluster-aws.png)`
+<img width="1920" height="1020" alt="iam-terraform-show" src="https://github.com/user-attachments/assets/9d700991-47f4-4933-8873-873728cba73f" />
 
-`![compute-ecs task definition](docs/images/ecs-task-def-aws.png)`
+**IAM**
 
-`!Private Subnet](docs/images/private-subnet-1.png)`
 
-`![athena plan](docs/images/public-subnet-0.png)`
+#### Compute (webapp) — showing terraform plan, apply, and AWS outputs via Console
 
-**Database** — apply output, then a successful connection made *from inside* the VPC (proving it is genuinely not publicly reachable)
 
-`![database-rds apply](docs/images/rds-apply.png)`
+<img width="1920" height="1020" alt="ecs-terraform-apply" src="https://github.com/user-attachments/assets/5ce863fc-66a2-4305-ade6-36ef1fd43b2b" />
 
-`![database-rds plan](docs/images/rds-plan.png)`
+**ECS Apply**
 
-`![database-rds AWS Console](docs/images/rds-db-aws.png)`
 
-`![database-rds Snapshot](docs/images/rds_snapshot_aws.png)`
+<img width="1920" height="1020" alt="ecs-terraform-plan" src="https://github.com/user-attachments/assets/c476174d-b8d6-4c4d-aa09-e2fcc216bd05" />
 
-**Storage & Data Platform** — apply output, then the crawler run and an Athena query returning real rows from the sample data
+**ECS plan**
 
-`![athena plan](docs/images/s3_athena_dev_plan.png)`
 
-`![Crawlers Glue](docs/images/crawlers_glue.png)`
+<img width="1920" height="1020" alt="ecs-terraform-plan1" src="https://github.com/user-attachments/assets/e906db09-62d3-48a9-bd19-361f46e94026" />
 
-`![athena s3 raw data](docs/images/s3_athena_raw_data-dev.png)`
+**ECS Plan**
 
-`![athena glue](docs/images/s3_athena_glue_dev.png)`
 
-`![table glue](docs/images/table_glue.png)`
+<img width="1920" height="1020" alt="ec2-ecs-instance-aws" src="https://github.com/user-attachments/assets/2dba2fc7-ac2e-43c1-8520-a8f74af8b7bf" />
 
-`![order table](docs/images/athena_table_orders.png)`
+**EC2 Instance Created**
 
-`![athena query results](docs/images/athena_orders_query.png)`
 
-**Applying Terraform Destroy**
+<img width="1920" height="1020" alt="ecs-cluster-aws" src="https://github.com/user-attachments/assets/627a4c5c-99ae-4bcd-82f4-1b4e1cf5623d" />
 
-`![Terraform destroy for Database module](docs/images/terraform-destroy-module-database.png)`
+**ECS Cluster**
 
-`![Terraform destroy for My App module](docs/images/terraform-destroy-module-my_app.png)`
+
+<img width="1920" height="1020" alt="ecs-task-def-aws" src="https://github.com/user-attachments/assets/039495b2-b3dd-41f7-a7e4-6cd63a6640c9" />
+
+**ECS Task Definition**
+
+
+<img width="801" height="567" alt="private-subnet-1" src="https://github.com/user-attachments/assets/32d784c5-c461-4248-b4fc-dee59a1802a5" />
+
+**Private Subnet**
+
+
+<img width="801" height="692" alt="public-subnet-0" src="https://github.com/user-attachments/assets/a92cc29a-2dce-443e-b250-df82d7567072" />
+
+**Athena Terraform Plan Output**
+
+
+##### Database — apply output, then a successful connection made *from inside* the VPC (proving it is genuinely not publicly reachable)
+
+
+<img width="1920" height="1020" alt="rds-apply" src="https://github.com/user-attachments/assets/b0f1057f-3507-4bf1-a973-75a70258f66a" />
+
+**RDS Terraform Apply**
+
+
+<img width="1920" height="1020" alt="rds-plan" src="https://github.com/user-attachments/assets/4aeb86a4-f1a6-4da4-abba-c3854ba95e8a" />
+
+**RDS Terraform Plan**
+
+
+<img width="1920" height="1020" alt="rds-db-aws" src="https://github.com/user-attachments/assets/b5dddc94-1f6f-407b-9b5c-8718095d5dcc" />
+
+**RDS database in AWS**
+
+
+<img width="1920" height="1020" alt="rds_snapshot_aws" src="https://github.com/user-attachments/assets/37ed8b2f-d0d4-4527-bfec-42639edf2d8a" />
+
+**RDS Snapshot in AWS**
+
+
+#### Storage & Data Platform — apply output, then the crawler run and an Athena query returning real rows from the sample data
+
+
+<img width="1920" height="1020" alt="s3_athena_dev_plan" src="https://github.com/user-attachments/assets/1c307bf2-163a-4250-8be8-27730f1c548f" />
+
+**Athena Terraform Plan**
+
+
+<img width="1920" height="1020" alt="crawlers_glue" src="https://github.com/user-attachments/assets/c3464581-d239-464a-9f93-bb119ce9f2ac" />
+
+**Crawler Glue**
+
+
+<img width="1920" height="1020" alt="s3_athena_raw_data-dev" src="https://github.com/user-attachments/assets/a36c0153-5ca1-4690-9659-69ed934a9f72" />
+
+**Athena s3 raw data**
+
+
+
+<img width="1920" height="1020" alt="s3_athena_glue_dev" src="https://github.com/user-attachments/assets/d64287b0-dc8d-409e-aed6-85f0fa74dce8" />
+
+**Athena Glue Interface**
+
+
+<img width="1920" height="1020" alt="table_glue" src="https://github.com/user-attachments/assets/6d18135f-29a5-41d2-9ff4-780b40d1b77d" />
+
+**Athena Glue Table**
+
+
+<img width="1920" height="1020" alt="athena_table_orders" src="https://github.com/user-attachments/assets/371bfcbd-96a2-47ab-949f-c0534d2c7835" />
+
+**Athena Table showing Orders**
+
+
+<img width="1920" height="1020" alt="athena_orders_query" src="https://github.com/user-attachments/assets/d7f44b4b-7f5d-4623-b893-3f28b63be68c" />
+
+**Athena Query Results**
+
+
+#### Applying Terraform Destroy
+
+
+<img width="1920" height="1020" alt="terraform-destroy-module-database" src="https://github.com/user-attachments/assets/341122f8-080e-4f6e-9068-4b57a1c4cd26" />
+
+**Terraform Destroy on Database Module**
+
+
+<img width="1920" height="1020" alt="terraform-destroy-module-my_app" src="https://github.com/user-attachments/assets/2aaee958-d88a-48e4-ad5d-77f93b390660" />
+
+**Terraform Destroy on My_App Module**
+
+
 
 ## Security considerations
 
@@ -424,9 +514,12 @@ Screenshots of `terraform plan` and `terraform apply` for each capability, and t
 - VPC flow logs and CloudWatch logging are on by default across networking and compute.
 - Every AWS-service-facing role (VPC flow logs, ECS container instances, the Glue crawler) is scoped narrowly to exactly what that one function needs — never a shared, broad role.
 
+
 ## Architecture
 
-`![COB architecture](docs/images/terraform_arch.drawio.png)`
+
+<img width="562" height="562" alt="terraform_arch drawio" src="https://github.com/user-attachments/assets/a9390df0-2fff-4af3-9472-020ad84a08dc" />
+**Architecture for the COB Project**
 
 The diagram groups infrastructure into two independent stacks — an application stack (networking, compute, database) and a data stack (storage, Glue, Athena) — with IAM shown as the cross-cutting component providing scoped access into both, rather than as a single generic role.
 
