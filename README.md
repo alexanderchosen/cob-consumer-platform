@@ -519,6 +519,7 @@ Screenshots of `terraform plan` and `terraform apply` for each capability, and t
 
 
 <img width="562" height="562" alt="terraform_arch drawio" src="https://github.com/user-attachments/assets/a9390df0-2fff-4af3-9472-020ad84a08dc" />
+
 **Architecture for the COB Project**
 
 The diagram groups infrastructure into two independent stacks — an application stack (networking, compute, database) and a data stack (storage, Glue, Athena) — with IAM shown as the cross-cutting component providing scoped access into both, rather than as a single generic role.
