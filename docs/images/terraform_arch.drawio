@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net">
+<mxfile host="app.diagrams.net" pages="3">
   <diagram name="Page-1" id="HqsevtsJhaVnRlG-yiu6">
-    <mxGraphModel dx="1030" dy="579" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1414" dy="795" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -63,6 +63,185 @@
         </mxCell>
         <mxCell id="pD6lBOAplBeZc30nbAEd-17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=16;" value="&lt;b&gt;data platform - combines s3 &amp;amp; data-platform&amp;nbsp;&lt;/b&gt;" vertex="1">
           <mxGeometry height="30" width="360" x="212.5" y="500" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="OsuSw1O-oJN21NpezJPu" name="Page-2">
+    <mxGraphModel dx="1830" dy="1379" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-1" parent="1" style="whiteSpace=wrap;html=1;aspect=fixed;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;Application Engineering Team&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;div&gt;Key Inputs:&lt;/div&gt;&lt;div&gt;1. Owner&lt;br&gt;2. Environment&lt;br&gt;3. purpose&lt;br&gt;4. name_prefix&lt;br&gt;5. Container_image&lt;br&gt;6. Container_port&lt;br&gt;7.&amp;nbsp; Allowed_ingress_cidr&lt;/div&gt;" vertex="1">
+          <mxGeometry height="230" width="230" x="-450" y="-320" as="geometry" />
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-2" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;edgeStyle=orthogonalEdgeStyle;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="-220" y="-200" />
+              <mxPoint x="-140" y="-200" />
+              <mxPoint x="-140" y="20" />
+            </Array>
+            <mxPoint x="-220" y="-110" as="sourcePoint" />
+            <mxPoint x="-40" y="20" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;Main.tf&lt;/font&gt;&lt;/b&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Calls 3 modules:&lt;br&gt;1. Networking&amp;nbsp;&lt;br&gt;2. ECS&amp;nbsp;&lt;br&gt;3. RDS&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="180" x="-40" y="-26" as="geometry" />
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-4" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="142" y="19.5" as="sourcePoint" />
+            <mxPoint x="252" y="19.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Networking&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;1. Creates A VPC with the default &lt;br&gt;2 public and private subnets&lt;br&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;2. NAT Gateway not enabled&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="228" x="252" y="-28" as="geometry" />
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Compute (ECS)&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&lt;br&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;1. Setups a WebApp with an Endpoint&lt;/span&gt;&lt;/div&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;2. Configures the IAM policies with least privileges granted&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="220" x="590" y="-30" as="geometry" />
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-7" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="476" y="19.5" as="sourcePoint" />
+            <mxPoint x="586" y="19.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Database (RDS)&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&lt;br&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;1. Setups a private and secure Database for the WebApp&lt;/span&gt;&lt;/div&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;2. Configures the IAM policies with least privileges granted&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="220" x="760" y="-340" as="geometry" />
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-9" edge="1" parent="1" source="OiF2ZY8JAfzQCLuIgfg0-6" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;exitX=0.468;exitY=-0.03;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="OiF2ZY8JAfzQCLuIgfg0-8" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="830" y="-10" as="sourcePoint" />
+            <mxPoint x="1030" y="-180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;End Users&lt;/b&gt;&lt;br&gt;&lt;br&gt;Connects via Public IP endpoint&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="220" x="1500" y="-30" as="geometry" />
+        </mxCell>
+        <mxCell id="OiF2ZY8JAfzQCLuIgfg0-11" edge="1" parent="1" source="OiF2ZY8JAfzQCLuIgfg0-6" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="eiapLM5Dda7IYeLDjAjx-1" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="829.9999999999999" y="-51.5" as="sourcePoint" />
+            <mxPoint x="960" y="20" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="CEY5FXovrB8d5v1j1qNt-1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=18;fontStyle=1" value="APPLICATION ENGINEERING TEAM ARCHITECTURE" vertex="1">
+          <mxGeometry height="30" width="460" x="136" y="-470" as="geometry" />
+        </mxCell>
+        <mxCell id="eiapLM5Dda7IYeLDjAjx-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Outputs&lt;br&gt;&lt;br&gt;1. vpc_id&lt;/b&gt;&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;2. ecs_cluster_name&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;3. ecs_service_name&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;4.&amp;nbsp;&lt;/b&gt;&lt;/span&gt;&lt;b style=&quot;font-size: 15px; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;db_endpoint&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;4. db_credentials_secret_arn&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="230" width="250" x="1040" y="-95" as="geometry" />
+        </mxCell>
+        <mxCell id="eiapLM5Dda7IYeLDjAjx-2" edge="1" parent="1" source="OiF2ZY8JAfzQCLuIgfg0-8" style="edgeStyle=orthogonalEdgeStyle;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;innerLoopWaypoints=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;fontSize=12;startSize=8;endSize=8;" target="OiF2ZY8JAfzQCLuIgfg0-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eiapLM5Dda7IYeLDjAjx-3" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;entryX=0.42;entryY=0.009;entryDx=0;entryDy=0;entryPerimeter=0;" target="eiapLM5Dda7IYeLDjAjx-1" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="1145" y="-280" />
+            </Array>
+            <mxPoint x="1145" y="-280" as="sourcePoint" />
+            <mxPoint x="1040" y="-230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eiapLM5Dda7IYeLDjAjx-4" edge="1" parent="1" source="OiF2ZY8JAfzQCLuIgfg0-8" style="endArrow=none;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;exitX=0.991;exitY=0.59;exitDx=0;exitDy=0;exitPerimeter=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1020" y="-250" as="sourcePoint" />
+            <mxPoint x="1150" y="-280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eiapLM5Dda7IYeLDjAjx-5" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1290" y="19.5" as="sourcePoint" />
+            <mxPoint x="1500" y="19.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="page3" id="LaXE5I6DtWDcQNebX14j">
+    <mxGraphModel dx="2371" dy="1683" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-0" />
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-1" parent="f_iOl95TPDnG7vNwNjgm-0" />
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-2" parent="f_iOl95TPDnG7vNwNjgm-1" style="whiteSpace=wrap;html=1;aspect=fixed;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;Data Engineering Team&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;br&gt;&lt;div&gt;Key Inputs:&lt;/div&gt;&lt;div&gt;1. Owner&lt;br&gt;2. Environment&lt;br&gt;3. purpose for s3 module &amp;amp; data platform module&lt;br&gt;4. name_prefix for s3 &amp;amp; data-platform module&amp;nbsp;&lt;br&gt;5. Object file source for upload&lt;/div&gt;&lt;div&gt;6. source_prefix for data-platform module&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="250" width="250" x="-470" y="-320" as="geometry" />
+        </mxCell>
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-3" edge="1" parent="f_iOl95TPDnG7vNwNjgm-1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;edgeStyle=orthogonalEdgeStyle;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="-220" y="-200" />
+              <mxPoint x="-140" y="-200" />
+              <mxPoint x="-140" y="20" />
+            </Array>
+            <mxPoint x="-220" y="-110" as="sourcePoint" />
+            <mxPoint x="-40" y="20" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-4" parent="f_iOl95TPDnG7vNwNjgm-1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;Main.tf&lt;/font&gt;&lt;/b&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Calls 2 modules:&lt;br&gt;1. S3 module&lt;br&gt;2. Data-Platform module&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="180" x="-40" y="-26" as="geometry" />
+        </mxCell>
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-5" edge="1" parent="f_iOl95TPDnG7vNwNjgm-1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="142" y="19.5" as="sourcePoint" />
+            <mxPoint x="252" y="19.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-6" parent="f_iOl95TPDnG7vNwNjgm-1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;S3 raw data&lt;br&gt;&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;div&gt;1. Creates an encrypted bucket&amp;nbsp;&lt;br&gt;2. Uploads file from source to S3 bucket&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="228" x="252" y="-28" as="geometry" />
+        </mxCell>
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-7" parent="f_iOl95TPDnG7vNwNjgm-1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;data-platform (Glue)&lt;br&gt;&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;div&gt;1. Creates Crawler&amp;nbsp;&lt;br&gt;2. Creates catalog&amp;nbsp;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="220" x="590" y="-30" as="geometry" />
+        </mxCell>
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-8" edge="1" parent="f_iOl95TPDnG7vNwNjgm-1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="479" y="19.5" as="sourcePoint" />
+            <mxPoint x="589" y="19.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-9" parent="f_iOl95TPDnG7vNwNjgm-1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Analytics Engineering&lt;br&gt;&lt;br&gt;&lt;br&gt;1. &lt;/b&gt;With least-privilege IAM roles, an Analyst can access the data and run queries to create analyses to help make business-informed decisions&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;2. Use raw data bucket ARN, Glue database ARN, Athena workgroup ARN, and Athena results bucket ARN&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="240" width="350" x="2170" y="-122" as="geometry" />
+        </mxCell>
+        <mxCell id="f_iOl95TPDnG7vNwNjgm-11" parent="f_iOl95TPDnG7vNwNjgm-1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;b style=&quot;&quot;&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;S3 Result Bucket&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px;&quot;&gt;1. All query results are saved in a newly created s3 Bucket with a 30-day lifecycle&lt;/span&gt;&lt;/b&gt;" vertex="1">
+          <mxGeometry height="100" width="220" x="1249" y="-30" as="geometry" />
+        </mxCell>
+        <mxCell id="xYkAFyhD0CN0BY92X9AT-0" parent="f_iOl95TPDnG7vNwNjgm-1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;data-platform (Athena)&lt;br&gt;&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;div&gt;1. Creates table for SQL queries&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="220" x="921" y="-30" as="geometry" />
+        </mxCell>
+        <mxCell id="xYkAFyhD0CN0BY92X9AT-1" edge="1" parent="f_iOl95TPDnG7vNwNjgm-1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="810" y="19.439999999999998" as="sourcePoint" />
+            <mxPoint x="920" y="19.439999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xYkAFyhD0CN0BY92X9AT-2" edge="1" parent="f_iOl95TPDnG7vNwNjgm-1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1140" y="19.439999999999998" as="sourcePoint" />
+            <mxPoint x="1250" y="19.439999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xYkAFyhD0CN0BY92X9AT-3" edge="1" parent="f_iOl95TPDnG7vNwNjgm-1" style="endArrow=none;dashed=1;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="2040" y="333" as="sourcePoint" />
+            <mxPoint x="2040" y="-337" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xYkAFyhD0CN0BY92X9AT-4" edge="1" parent="f_iOl95TPDnG7vNwNjgm-1" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;entryX=0.006;entryY=0.598;entryDx=0;entryDy=0;entryPerimeter=0;" target="f_iOl95TPDnG7vNwNjgm-9" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1870" y="20" as="sourcePoint" />
+            <mxPoint x="1560" y="10" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Jtdl4Dz-t2zrRo2RodAw-0" parent="f_iOl95TPDnG7vNwNjgm-1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Outputs&lt;/b&gt;&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;&lt;br&gt;&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;1. raw data bucket name&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;2. raw data bucket ARN&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;3. Glue database name&lt;br&gt;4. Glue database ARN&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;5. Athena workgroup name&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;6. Athena workgroup ARN&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;7. Athena results bucket ARN&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;8. Crawler name&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="240" width="260" x="1660" y="-120" as="geometry" />
+        </mxCell>
+        <mxCell id="Jtdl4Dz-t2zrRo2RodAw-1" edge="1" parent="f_iOl95TPDnG7vNwNjgm-1" style="endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;entryX=0;entryY=0.583;entryDx=0;entryDy=0;entryPerimeter=0;" target="Jtdl4Dz-t2zrRo2RodAw-0" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1469" y="19.439999999999998" as="sourcePoint" />
+            <mxPoint x="1579" y="19.439999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="i6ezO3N2gXbYevCHWrSr-0" parent="f_iOl95TPDnG7vNwNjgm-1" style="text;whiteSpace=wrap;html=1;fontStyle=1;fontSize=18;align=center;" value="&lt;p&gt;DATA ENGINEERING TEAM ARCHITECTURE&lt;/p&gt;" vertex="1">
+          <mxGeometry height="60" width="500" x="250" y="-470" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

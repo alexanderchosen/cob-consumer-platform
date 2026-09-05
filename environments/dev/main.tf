@@ -1,4 +1,4 @@
-# so, its worth noting that terraform does not execute this file from top to bottom but instead it builds a dependency graph and then figures out the correct order to create things from it
+# so, its worth noting that I learnt terraform does not execute this file from top to bottom but instead it builds a dependency graph and then figures out the correct order to create things from it
 
 module "networking" {
     source = "../../modules/networking"
@@ -6,7 +6,7 @@ module "networking" {
     nat_gateway_enable = false
 }
 
-# wildcard * is not allowed, so this should throw an error
+# wildcard * is not allowed, so this should throw an error when it is used as the arn
 module "test_role" {
     source = "../../modules/iam"
     name_prefix = "cob-dev-iam"

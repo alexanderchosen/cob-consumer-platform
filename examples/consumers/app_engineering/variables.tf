@@ -20,4 +20,5 @@ variable "aws_region" {
 
 variable "owner" {
   type = string
+  default = "application engineering"
 }
