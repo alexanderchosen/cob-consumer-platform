@@ -6,7 +6,7 @@ module "networking" {
 module "webapp" {
   source = "../../../modules/ecs"
   name_prefix = "${var.project}-${var.environment}-ecs"
-  purpose = "webapp"
+  purpose = var.purpose
   vpc_id = module.networking.vpc_id
   subnet_ids = module.networking.public_subnet_ids
   instance_type = "t3.micro"
@@ -21,7 +21,7 @@ module "webapp" {
 module "database" {
     source = "../../../modules/rds"
     name_prefix = "${var.project}-${var.environment}-rds"
-    purpose = "webapp"
+    purpose = var.purpose
     vpc_id = module.networking.vpc_id
     subnet_ids = module.networking.private_subnet_ids
     app_security_group_id  = module.webapp.instance_sg_id

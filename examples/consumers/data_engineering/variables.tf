@@ -5,7 +5,6 @@ variable "project" {
 
 variable "environment" {
   type = string
-  default = "dev"
 
   validation {
     condition = contains(["dev", "prod"], var.environment)
@@ -20,4 +19,15 @@ variable "aws_region" {
 
 variable "owner" {
   type = string
+  default = "data engineering"
+}
+
+variable "dataset_name" {
+  type = string
+
+}
+
+variable "bucket_use" {
+  type = string
+  default = "raw-data"
 }

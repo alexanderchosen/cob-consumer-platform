@@ -5,7 +5,6 @@ variable "project" {
 
 variable "environment" {
   type = string
-  default = "dev"
 
   validation {
     condition = contains(["dev", "prod"], var.environment)
@@ -21,4 +20,20 @@ variable "aws_region" {
 variable "owner" {
   type = string
   default = "application engineering"
+}
+
+variable "purpose" {
+  type = string
+}
+
+variable "container_image" {
+  type = string
+}
+
+variable "container_port" {
+  type = number
+}
+
+variable "allowed_ingress_cidr" {
+  type = string
 }
