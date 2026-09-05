@@ -68,7 +68,7 @@ The table above is the quick-scan version. Full reasoning, inputs, outputs, and 
 - **Key outputs:** `bucket_id`, `bucket_arn`, `bucket_name`, `kms_key_arn`
 - **Secure by default:** public access is blocked unconditionally (not a variable); encryption is always on; a lifecycle rule expires both current *and* old object versions, so cost doesn't grow unbounded.
 - **Trade-off:** S3 bucket names must be globally unique across all of AWS, so the module appends a random suffix itself — the consumer never has to solve AWS's uniqueness problem by hand.
-- **Cost note:** `data_classification = "sensitive"` creates a dedicated KMS key at a flat **$1/month regardless of use** — use `"internal"` or `"public"` unless you specifically need it.
+
 - **Out of scope (v1):** cross-region replication, static website hosting.
 
 #### Compute — `modules/compute-ec2`, `modules/compute-ecs`
@@ -96,7 +96,7 @@ The table above is the quick-scan version. Full reasoning, inputs, outputs, and 
 - **Key inputs:** `name_prefix`, `purpose`, `source_bucket_arn`, `source_bucket_name`, `source_prefix`, `crawler_schedule`
 - **Key outputs:** `glue_database_name`, `athena_workgroup_name`, `crawler_name`, `results_bucket_name`
 - **Secure by default:** Athena query results are always encrypted; the crawler's IAM role can only ever read the one S3 prefix it's told to crawl, never the whole bucket.
-- **Trade-off:** this module composes `modules/storage-s3` internally for its own Athena results bucket, rather than reimplementing bucket logic — proof the platform reuses its own capabilities the same way an external team would.
+- **Trade-off:** This module composes `modules/storage-s3` internally for its own Athena results bucket, rather than reimplementing bucket logic — proof the platform reuses its own capabilities the same way an external team would.
 - **Out of scope (v1):** Lake Formation fine-grained permissions, cross-account catalog sharing.
 
 ```
@@ -108,7 +108,7 @@ resource "aws_s3_object" "test_orders" {
 }
 ```
 
-Each environment uses the s3 resource above to upload data a file to the s3 bucket, which is then used by the data-platform to produce queries and results.
+Each environment uses the s3 resource above to upload a file to the s3 bucket, which is then used by the data-platform to produce queries and results.
 
 ## Repository structure
 
@@ -123,7 +123,7 @@ cob/
 
 ## How a team consumes COB
 
-A consumer never edits anything inside `modules/`. They write a short root config, in their own `environments/<environment_name>/main.tf`, calling the capability they need:
+A consumer never edits anything inside `modules/`. They write a short root config in their own `environments/<environment_name>/main.tf`, calling the capability they need:
 
 ```hcl
 module "database" {
@@ -136,7 +136,7 @@ module "database" {
 }
 ```
 
-Declaring the owner, and purpose of the database, and properly setting up the VPC, subnet and security group by running the networking module produce a fully working database with a unique name alongside other components without having to understand the backend of the module. Every security decision, gateway type, type of subnet used is made by the interconnected modules, not the consumer.
+Declaring the owner and purpose of the database, and properly setting up the VPC, subnet and security group by running the networking module produce a fully working database with a unique name alongside other components without having to understand the backend of the module. Every security decision, gateway type, type of subnet used is made by the interconnected modules, not the consumer.
 
 ```hcl
 module "raw_data" {
@@ -160,7 +160,7 @@ module "analytics" {
 }
 ```
 
-The consumer provides the owner, name of the data platform, purpose of the data platform, and source_prefix to produce fully interconnected services from s3 bucket with an uploaded file, Glue with catalog and database, athena for querying the table and saving the results in another s3 bucket. It also relies heavily on a granular level IAM roles and policy for security and access control. All these are taken care of by the module backend, not the consumer
+The consumer provides the owner, name of the data platform, purpose of the data platform, and source_prefix to produce fully interconnected services from an S3 bucket with an uploaded file, Glue with catalog and database, Athena for querying the table and saving the results in another s3 bucket. It also relies heavily on granular-level IAM roles and policies for security and access control. All these are taken care of by the module backend, not the consumer
 
 ## Naming and tagging
 
@@ -184,7 +184,7 @@ This project runs on a free-tier AWS account.
 
 ## Environment and its modules
 
-Both environments (`environments/dev` and identically, `environments/prod`) composes five capabilities into one realistic stack: a network, a containerised web app, a private database, a raw-data bucket, and an analytics layer over that data.
+Both environments (`environments/dev` and, identically, `environments/prod`) compose five capabilities into one realistic stack: a network, a containerised web app, a private database, a raw-data bucket, and an analytics layer over that data.
 
 This sample uses the DEV environment:
 
@@ -258,12 +258,17 @@ Running `terraform output` after `terrform plan` and `terraform apply` should re
 
 ## Consumer example and expected outputs
 
-We have 2 consumer examples; which are the Application Engineering and Data engineering team
+We have 2 consumer examples, which are the Application Engineering and Data Engineering teams
 
 **Application Engineering**
 
-This consumer composes of three capabilities into one realistic stack: a network, a containerised web app, and a private database.
+This consumer comprises three capabilities in one realistic stack: a network, a containerised web app, and a private database.
 This team owns "Web applications, Microservices" — nothing about data, nothing about analytics. So their whole world is three module calls: a network to run in, somewhere to run the container, and a database behind it.
+
+**Image showing the consumer flow architecture for the Application Engineering team**
+
+<img width="2102" height="974" alt="app_eng drawio" src="https://github.com/user-attachments/assets/7d067659-610c-452f-9f08-9dd2b091db45" />
+
 
 ```hcl
 module "networking" {
@@ -300,7 +305,12 @@ module "database" {
 
 **Data Engineering**
 
-this team owns "Data ingestion, Data processing, Analytics" — that's storage-s3 (where ingested data lands) and data-platform (the crawler, catalog, and Athena workgroup that turn raw files into something queryable). No networking, no compute, no database — Glue, Athena, and S3 are regional services, never VPC-scoped.
+This team owns "Data ingestion, Data processing, Analytics" — that's storage-s3 (where ingested data lands) and data-platform (the crawler, catalog, and Athena workgroup that turn raw files into something queryable). No networking, no compute, no database — Glue, Athena, and S3 are regional services, never VPC-scoped.
+
+**Image showing the consumer flow architecture for the Data Engineering team**
+
+<img width="3251" height="670" alt="consumer_flow_arch-data-eng drawio" src="https://github.com/user-attachments/assets/53acb0a3-221b-46a4-84d7-d395c0549c5e" />
+
 
 ```hcl
 module "raw_data" {
@@ -525,9 +535,9 @@ Screenshots of `terraform plan` and `terraform apply` for each capability, and t
 The diagram groups infrastructure into two independent stacks — an application stack (networking, compute, database) and a data stack (storage, Glue, Athena) — with IAM shown as the cross-cutting component providing scoped access into both, rather than as a single generic role.
 
 The two arrows are the only relationships drawn, and both are real, specific ones from the actual Terraform: EC2 → RDS is the security-group-to-security-group trust. The database can only be reached from the app's security group, nothing else.
-The S3 → Glue → Athena chain is literally the pipeline order to upload files, create catalog, crawl them and save the queries and result.
+The S3 → Glue → Athena chain is literally the pipeline order to upload files, create catalog, crawl them and save the queries and results.
 
-This diagram is the same for all environment, since both environments call identical module code, the shape of the architecture never changes between them; only sizing and some internal details would differ.
+This diagram is the same for all environments, since both environments call identical module code; the shape of the architecture never changes between them; only sizing and some internal details would differ.
 
 ## Architectural decisions and trade-offs
 
@@ -554,7 +564,7 @@ Follow the steps below accordingly:
 
 1. Create and lock down the one-time Terraform state bucket (versioned, encrypted, public access blocked).
  A. Choose a globally unique s3 bucket name
- B. run the following to configure the bucket, replace bucket name where needed:
+ B. Run the following to configure the bucket; replace the bucket name where needed:
 
  `aws s3api create-bucket --bucket YOUR-BUCKET-NAME --region eu-north-1 --create-bucket-configuration LocationConstraint=eu-north-1`
 
@@ -564,6 +574,6 @@ Follow the steps below accordingly:
 
 `aws s3api put-public-access-block --bucket YOUR-BUCKET-NAME --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true`
 
-1. run this in both environment: `cd environments/<environment-name> && terraform init`.
+1. Run this in both environments: `cd environments/<environment-name> && terraform init`.
 
-2. `terraform plan`, review it against the expected resource list, then `terraform apply`.
+2. `terraform plan`; review it against the expected resource list, then `terraform apply`.
