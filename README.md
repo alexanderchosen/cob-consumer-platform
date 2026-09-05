@@ -553,10 +553,8 @@ This diagram is the same for all environments, since both environments call iden
 
 ## Known limitations
 
-- RDS uses the AWS default parameter group; a custom one is out of scope for v1.
 - Long generated resource names are not automatically truncated or hashed against AWS length limits — untested beyond this project's short prefixes.
-- `ecs` (EC2 launch type) maps a fixed host port in bridge networking mode, so only one task can run per EC2 instance at a time.
-- Each capability's narrower out-of-scope items (no VPN/Transit Gateway, no cross-account IAM, no read replicas, no Lake Formation.)
+- Free-tier account limitation
 
 ## Getting started
 
