@@ -36,9 +36,9 @@ Six reusable capabilities, each bundling every resource needed to make that capa
 | --- | --- | --- |
 | Networking | `modules/networking` | VPC, public/private subnets across 2+ AZs, routing, hardened default security group, flow logs |
 | Identity & access | `modules/iam` | Least-privilege workload roles, with a hard guardrail against wildcard permissions |
-| Object storage | `modules/storage-s3` | Encrypted, versioned, lifecycle-managed S3 buckets with public access unconditionally blocked |
-| Compute | `modules/compute-ec2`, `modules/compute-ecs` | EC2 instances, and containerised workloads on ECS (EC2 launch type) — both wired to networking and IAM automatically |
-| Relational database | `modules/database-rds` | Private, encrypted RDS instance with credentials in Secrets Manager, reachable only from a named application security group |
+| Object storage | `modules/s3` | Encrypted, versioned, lifecycle-managed S3 buckets with public access unconditionally blocked |
+| Compute | `modules/ec2`, `modules/ecs` | EC2 instances, and containerised workloads on ECS (EC2 launch type) — both wired to networking and IAM automatically |
+| Relational database | `modules/rds` | Private, encrypted RDS instance with credentials in Secrets Manager, reachable only from a named application security group |
 | Data platform | `modules/data-platform` | Glue Catalog + crawler over an S3 prefix, and an Athena workgroup with encrypted query results |
 
 The table above is the quick-scan version. Full reasoning, inputs, outputs, and scope for each one follows immediately below.
@@ -61,7 +61,7 @@ The table above is the quick-scan version. Full reasoning, inputs, outputs, and 
 - **Secure by default:** a validation block physically rejects a wildcard (`"*"`) resource ARN at `plan` time — least privilege is enforced in code, not left as a guideline.
 - **Out of scope (v1):** federated/SSO roles, cross-account access.
 
-#### Object storage — `modules/storage-s3`
+#### Object storage — `modules/s3`
 
 - **The ask:** give a team somewhere safe to put data, matched to how sensitive it is.
 - **Key inputs:** `name_prefix`, `purpose`, `data_classification` (`public`/`internal`), `lifecycle_days`, `enable_versioning`
@@ -71,16 +71,16 @@ The table above is the quick-scan version. Full reasoning, inputs, outputs, and 
 
 - **Out of scope (v1):** cross-region replication, static website hosting.
 
-#### Compute — `modules/compute-ec2`, `modules/compute-ecs`
+#### Compute — `modules/compute-ec2`, `modules/ecs`
 
 - **The ask:** run an application, correctly networked and permissioned, without wiring subnets/security groups/IAM roles by hand.
-- **Key inputs:** `name_prefix`, `purpose`, `vpc_id`, `subnet_ids`, `container_image`/`container_port` (ECS), `instance_type`, `min_size`/`max_size`/`desired_capacity`, `allowed_ingress_cidr`, and `s3_read_arn`/`s3_write_arn`/`secrets_read_arn` which are passed straight through to the workload's IAM role.
+- **Key inputs:** `name_prefix`, `purpose`, `vpc_id`, `subnet_ids`, `container_image`/`container_port` (ECS), `instance_type`, `min_size`/`max_size`/`desired_capacity`, `allowed_ingress_cidr`, and `s3_read_arn`/`s3_write_arn`/`secrets_read_arn`, which are passed straight through to the workload's IAM role.
 - **Key outputs:** `cluster_name`, `service_name`, `instance_security_group_id`, `task_role_arn`
 - **Trade-off:** `compute-ecs` uses the **EC2 launch type** (a launch template, an Auto Scaling Group, and an ECS capacity provider) instead of Fargate.
-- **Limitation:** the container's port maps to a fixed host port in `bridge` networking mode, so only one task can run per EC2 instance at a time.
+- **Limitation:** The container's port maps to a fixed host port in `bridge` networking mode, so only one task can run per EC2 instance at a time.
 - **Out of scope (v1):** auto-scaling policies, blue/green deployment.
 
-#### Relational database — `modules/database-rds`
+#### Relational database — `modules/rds`
 
 - **The ask:** a managed database a team doesn't have to think about backups or placement for.
 - **Key inputs:** `name_prefix`, `purpose`, `vpc_id`, `subnet_ids`, `app_security_group_id`, `engine`, `engine_version`, `size_tier`, `multi_az`, `backup_retention_days`, `deletion_protection`
@@ -108,7 +108,7 @@ resource "aws_s3_object" "test_orders" {
 }
 ```
 
-Each environment uses the s3 resource above to upload a file to the s3 bucket, which is then used by the data-platform to produce queries and results.
+Each environment uses the S3 resource above to upload a file to the S3 bucket, which is then used by the data-platform to produce queries and results.
 
 ## Repository structure
 
@@ -127,7 +127,7 @@ A consumer never edits anything inside `modules/`. They write a short root confi
 
 ```hcl
 module "database" {
-  source = "../../modules/database-rds"
+  source = "../../modules/rds"
   name_prefix = "${var.project}-${var.environment}-rds"
   purpose = "webapp"
   vpc_id = module.networking.vpc_id
@@ -167,7 +167,7 @@ The consumer provides the owner, name of the data platform, purpose of the data 
 Every resource follows **`{project}-{environment}-{resource_type}-{purpose}`** — e.g. `cob-prod-s3-uploads`. Two rules make this consistent everywhere:
 
 - The **environment root config** (`environments/dev`, `environments/prod`) always computes `name_prefix` as `{project}-{environment}-{capability}` — it's the one choosing which module to call, so it's the one that knows the capability.
-- When one module composes another internally (`data-platform` calling `storage-s3`, or a compute module calling `iam`), the nested module inherits the **caller's** identity rather than computing its own — e.g. a role created on behalf of `compute-ecs` is grouped under the `ecs` capability, not `iam`. That way everything belonging to one workload is easy to find together.
+- When one module composes another internally (`data-platform` calling `s3`, or a compute module calling `iam`), the nested module inherits the **caller's** identity rather than computing its own — e.g. a role created on behalf of `compute-ecs` is grouped under the `ecs` capability, not `iam`. That way, everything belonging to one workload is easy to find together.
 
 Tagging works differently from naming. `Project`, `Environment`, `Owner` are applied automatically via each environment's `default_tags` provider setting — no module or consumer sets them by hand. `Resource_type` and `Purpose` are deliberately **not** separate tags: `default_tags` is one fixed map per environment, so it can't vary per module call. That identity is captured in the resource name instead, which is why the naming convention above carries real information.
 
@@ -314,7 +314,7 @@ This team owns "Data ingestion, Data processing, Analytics" — that's storage-s
 
 ```hcl
 module "raw_data" {
-  source = "../../modules/storage-s3"
+  source = "../../modules/s3"
   name_prefix  = "${var.project}-${var.environment}-s3"
   purpose = "raw-data"
   data_classification = "internal"
@@ -543,12 +543,12 @@ This diagram is the same for all environments, since both environments call iden
 
 | Decision | Reasoning |
 | --- | --- |
-| EC2 launch type over Fargate for `compute-ecs` | Fargate has no free-tier coverage at all; EC2 draws from the account's 750 free hours/month |
+| EC2 launch type over Fargate for `ecs` | Fargate has no free-tier coverage at all; EC2 draws from the account's 750 free hours/month |
 | Single S3 bucket for state, split by key, native S3 locking | Avoids a second AWS resource (DynamoDB) purely for locking, given the Terraform version in use |
 | NAT gateway and RDS Multi-AZ off by default | Both are billed continuously with no free-tier coverage; proven via a one-time apply-then-destroy rather than left running |
 | Capability-specific IAM roles built inline (flow logs, ECS container instances, Glue crawler) | These are infrastructure plumbing for an AWS *service*, not a workload identity — kept out of the general-purpose `modules/iam`, which is reserved for applications |
 | RDS security group references the app's security group, not a CIDR | Much stronger isolation — nothing can reach the database except the specific compute resource, regardless of network |
-| `storage-s3` generates its own unique bucket-name suffix | Removes AWS's global-uniqueness constraint from the consumer entirely, rather than making them solve it |
+| `s3` generates its own unique bucket-name suffix | Removes AWS's global-uniqueness constraint from the consumer entirely, rather than making them solve it |
 | `data-platform` composes `s3` for its Athena results bucket | Proves genuine module reusability — the platform consumes its own capabilities the same way an external team would |
 
 ## Known limitations
