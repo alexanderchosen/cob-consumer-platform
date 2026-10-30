@@ -1,4 +1,4 @@
-# so, its worth noting that I learnt terraform does not execute this file from top to bottom but instead it builds a dependency graph and then figures out the correct order to create things from it
+# so, its worth noting here that I learnt terraform does not execute this file from top to bottom but instead it builds a dependency graph and then figures out the correct order to create things from it
 
 module "networking" {
     source = "../../modules/networking"
@@ -22,7 +22,7 @@ module "test_ec2" {
     purpose = "test-ec2"
     vpc_id = module.networking.vpc_id
     subnet_id = module.networking.public_subnet_ids[0]
-    allowed_ingress_cidr = var.my_ip_cidr
+    allowed_ingress_cidr = "0.0.0.0/0"
 }
 
 # this is for the ecs in the dev environment

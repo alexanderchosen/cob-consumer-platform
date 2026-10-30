@@ -19,7 +19,7 @@ module "test_ec2" {
     purpose = "test-ec2"
     vpc_id = module.networking.vpc_id
     subnet_id = module.networking.public_subnet_ids[0]
-    allowed_ingress_cidr = var.my_ip_cidr
+    allowed_ingress_cidr = "0.0.0.0/0"
    }
 
 

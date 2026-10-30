@@ -28,6 +28,8 @@ variable "owner" {
     default = "Product Testers"
 }
 
+/*
 variable "my_ip_cidr" {
   type = string
 }
+*/
