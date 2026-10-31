@@ -562,16 +562,17 @@ Follow the steps below accordingly:
 
 1. Create and lock down the one-time Terraform state bucket (versioned, encrypted, public access blocked).
  A. Choose a globally unique s3 bucket name
- B. Run the following to configure the bucket; replace the bucket name where needed:
+ B. Run the following to configure the bucket; 
 
- `aws s3api create-bucket --bucket YOUR-BUCKET-NAME --region eu-north-1 --create-bucket-configuration LocationConstraint=eu-north-1`
+ `aws s3api create-bucket --bucket $TF_STATE_BUCKET --region eu-north-1 --create-bucket-configuration LocationConstraint=eu-north-1`
 
- `aws s3api put-bucket-versioning --bucket YOUR-BUCKET-NAME --versioning-configuration Status=Enabled`
+ `aws s3api put-bucket-versioning --bucket $TF_STATE_BUCKET --versioning-configuration Status=Enabled`
 
-`aws s3api put-bucket-encryption --bucket YOUR-BUCKET-NAME --server-side-encryption-configuration '{"Rules" [{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'`
+`aws s3api put-bucket-encryption --bucket $TF_STATE_BUCKET --server-side-encryption-configuration '{"Rules" [{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'`
 
-`aws s3api put-public-access-block --bucket YOUR-BUCKET-NAME --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true`
+`aws s3api put-public-access-block --bucket $TF_STATE_BUCKET --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true`
 
 1. Run this in both environments: `cd environments/<environment-name> && terraform init`.
 
 2. `terraform plan`; review it against the expected resource list, then `terraform apply`.
+# cob-consumer-platform

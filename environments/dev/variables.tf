@@ -1,32 +1,82 @@
+/*
 variable "project" {
-    description = "we have a fixed project name for the dev environment"
-    type = string
-    default = "cob"
+  type = string
+  default = "cob"
 }
 
 variable "environment" {
-    description = "This also has a fixed deployment environment"
-    type = string
-    default = "dev"
+  type = string
 
-    validation {
-      condition = contains(["dev", "prod"], var.environment)
-      error_message = "The environemnt variable must be either dev or prod"
-    }
+  validation {
+    condition = contains(["dev", "prod"], var.environment)
+    error_message = "environment must be either dev or prod."
+  }
 }
 
 variable "aws_region" {
-    description = "This is for the aws region to deploy to"
-    type = string
-    default = "eu-north-1"
+  type = string
+  default = "eu-north-1"
 }
 
 variable "owner" {
-    description = "We need the name of the team or person using this dev environment"
-    type = string
-    default = "Web dev team"
+  type = string
+  default = "data engineering"
 }
 
-variable "my_ip_cidr" {
+variable "dataset_name" {
   type = string
+
+}
+
+variable "bucket_use" {
+  type = string
+  default = "raw-data"
+}
+*/
+
+variable "project" {
+  description = "Project identifier used in every resource name."
+  type        = string
+  default     = "cob"
+}
+
+variable "environment" {
+  description = "Deployment environment. Drives naming and sizing."
+  type        = string
+
+  validation {
+    condition     = contains(["dev", "prod"], var.environment)
+    error_message = "environment must be either dev or prod."
+  }
+}
+
+variable "owner" {
+  description = "Team accountable for this stack. Applied as a tag."
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region for all resources."
+  type        = string
+  default     = "eu-north-1"
+}
+
+variable "lifecycle_days" {
+  description = "Days before objects and old versions expire."
+  type        = number
+
+  validation {
+    condition     = var.lifecycle_days > 0
+    error_message = "lifecycle_days must be greater than zero."
+  }
+}
+
+variable "crawler_schedule" {
+  description = "Cron expression for the Glue crawler, in Glue's schedule syntax."
+  type        = string
+}
+
+variable "dataset_name" {
+  type = string
+
 }

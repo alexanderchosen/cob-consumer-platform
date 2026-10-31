@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket = "alexander-cob-tfstate"
+    bucket = "alexander-cob-tfstate-2026"
     key = "examples/consumers/application-engineering/terraform.tfstate"
     region = "eu-north-1"
     encrypt = true

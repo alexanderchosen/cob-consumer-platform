@@ -26,14 +26,9 @@ variable "purpose" {
   type = string
 }
 
-variable "container_image" {
-  type = string
-}
 
-variable "container_port" {
-  type = number
-}
 
 variable "allowed_ingress_cidr" {
   type = string
+  default = "0.0.0.0/0"
 }

@@ -1,0 +1,7 @@
+product_id,product_name,category,unit_price,supplier
+P001,Solar Inverter 3kVA,power,285000,BrightVolt
+P002,Lithium Battery 100Ah,power,210000,BrightVolt
+P003,Pressure Transmitter,instrumentation,96000,FieldSense
+P004,Flow Meter DN50,instrumentation,154000,FieldSense
+P005,Industrial Router 4G,networking,78000,LinkCore
+P006,Managed Switch 8-Port,networking,52000,LinkCore

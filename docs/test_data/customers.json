@@ -1,0 +1,91 @@
+{
+    "Name": "customers",
+    "DatabaseName": "cob_data_eng_dev_data_retail_analytics",
+    "Owner": "owner",
+    "CreateTime": "2026-10-31T17:04:48+01:00",
+    "UpdateTime": "2026-10-31T17:04:48+01:00",
+    "LastAccessTime": "2026-10-31T17:04:48+01:00",
+    "Retention": 0,
+    "StorageDescriptor": {
+        "Columns": [
+            {
+                "Name": "col0",
+                "Type": "string"
+            },
+            {
+                "Name": "col1",
+                "Type": "string"
+            },
+            {
+                "Name": "col2",
+                "Type": "string"
+            },
+            {
+                "Name": "col3",
+                "Type": "string"
+            },
+            {
+                "Name": "col4",
+                "Type": "string"
+            },
+            {
+                "Name": "col5",
+                "Type": "string"
+            }
+        ],
+        "Location": "s3://cob-data-eng-dev-s3-datalake-21145a/raw/customers/",
+        "InputFormat": "org.apache.hadoop.mapred.TextInputFormat",
+        "OutputFormat": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "Compressed": false,
+        "NumberOfBuckets": -1,
+        "SerdeInfo": {
+            "SerializationLibrary": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
+            "Parameters": {
+                "field.delim": ","
+            }
+        },
+        "BucketColumns": [],
+        "SortColumns": [],
+        "Parameters": {
+            "sizeKey": "463",
+            "objectCount": "1",
+            "UPDATED_BY_CRAWLER": "cob-data-eng-dev-data-retail-analytics-crawler",
+            "recordCount": "9",
+            "CrawlerSchemaSerializerVersion": "1.0",
+            "averageRecordSize": "50",
+            "compressionType": "none",
+            "CrawlerSchemaDeserializerVersion": "1.0",
+            "classification": "csv",
+            "columnsOrdered": "true",
+            "delimiter": ",",
+            "areColumnsQuoted": "false",
+            "CRAWL_RUN_ID": "c88be7ff-6a77-474d-9620-f44db260bdb3",
+            "typeOfData": "file"
+        },
+        "StoredAsSubDirectories": false
+    },
+    "PartitionKeys": [],
+    "TableType": "EXTERNAL_TABLE",
+    "Parameters": {
+        "sizeKey": "463",
+        "objectCount": "1",
+        "UPDATED_BY_CRAWLER": "cob-data-eng-dev-data-retail-analytics-crawler",
+        "recordCount": "9",
+        "CrawlerSchemaSerializerVersion": "1.0",
+        "averageRecordSize": "50",
+        "compressionType": "none",
+        "CrawlerSchemaDeserializerVersion": "1.0",
+        "classification": "csv",
+        "columnsOrdered": "true",
+        "delimiter": ",",
+        "areColumnsQuoted": "false",
+        "CRAWL_RUN_ID": "c88be7ff-6a77-474d-9620-f44db260bdb3",
+        "typeOfData": "file"
+    },
+    "CreatedBy": "arn:aws:sts::324404179878:assumed-role/cob-data-eng-dev-data-retail-analytics-crawler-role/AWS-Crawler",
+    "IsRegisteredWithLakeFormation": false,
+    "CatalogId": "324404179878",
+    "VersionId": "0",
+    "IsMultiDialectView": false,
+    "IsMaterializedView": false
+}

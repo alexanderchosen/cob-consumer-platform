@@ -1,10 +1,10 @@
 module "networking" {
-    source = "../../../modules/networking"
+    source = "git::https://github.com/alexanderchosen/cob-modules-platform.git//modules/networking?ref=v1.0.0"
     name_prefix = "${var.project}-${var.environment}-net"
 }
 
 module "webapp" {
-  source = "../../../modules/ecs"
+  source = "git::https://github.com/alexanderchosen/cob-modules-platform.git//modules/ecs?ref=v1.0.0"
   name_prefix = "${var.project}-${var.environment}-ecs"
   purpose = var.purpose
   vpc_id = module.networking.vpc_id
@@ -19,7 +19,7 @@ module "webapp" {
 }
 
 module "database" {
-    source = "../../../modules/rds"
+    source = "git::https://github.com/alexanderchosen/cob-modules-platform.git//modules/rds?ref=v1.0.0"
     name_prefix = "${var.project}-${var.environment}-rds"
     purpose = var.purpose
     vpc_id = module.networking.vpc_id
