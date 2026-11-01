@@ -11,6 +11,11 @@ name: Terraform Apply
 # GitHub only issues that subject to a job declaring that environment,
 # and such a job cannot start until its reviewer approves. Approval is
 # therefore a precondition for obtaining AWS write credentials.
+#
+# NOTE: command output is passed into run: blocks via env: and never
+# by direct ${{ }} interpolation. Interpolated text is pasted into the
+# script before bash parses it, so a plan containing parentheses or
+# backticks would be executed as code rather than printed as data.
 
 on:
   push:
@@ -72,21 +77,26 @@ jobs:
 
       - name: terraform output
         id: output
+        if: always()
         working-directory: environments/dev
         run: terraform output -no-color
+        continue-on-error: true
 
       - name: Report result
         if: always()
+        env:
+          OUTPUTS: ${{ steps.output.outputs.stdout }}
+          RESULT: ${{ steps.apply.outcome }}
         run: |
           {
             echo "## Apply — dev"
             echo ""
-            echo "**Result:** ${{ steps.apply.outcome == 'success' && 'Succeeded' || 'Failed' }}"
+            echo "**Result:** $RESULT"
             echo ""
             echo "<details><summary>Outputs</summary>"
             echo ""
             echo '```'
-            echo "${{ steps.output.outputs.stdout }}"
+            echo "$OUTPUTS"
             echo '```'
             echo ""
             echo "</details>"
@@ -129,14 +139,29 @@ jobs:
         continue-on-error: true
 
       - name: Publish plan for reviewer
+        if: always()
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+          ERRORS: ${{ steps.plan.outputs.stderr }}
+          EXITCODE: ${{ steps.plan.outputs.exitcode }}
         run: |
           {
             echo "## Plan — prod (awaiting approval)"
             echo ""
-            echo "Review this plan, then approve the **Apply prod** job."
+            if [ "$EXITCODE" = "0" ]; then
+              echo "No changes. Infrastructure matches configuration."
+            elif [ "$EXITCODE" = "2" ]; then
+              echo "Changes detected. Review below, then approve the **Apply prod** job."
+            else
+              echo "Plan failed. Approval should not be granted."
+            fi
             echo ""
             echo '```terraform'
-            echo "${{ steps.plan.outputs.stdout }}"
+            if [ "$EXITCODE" = "1" ]; then
+              echo "$ERRORS"
+            else
+              echo "$PLAN"
+            fi
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -186,22 +211,28 @@ jobs:
 
       - name: terraform output
         id: output
+        if: always()
         working-directory: environments/prod
         run: terraform output -no-color
+        continue-on-error: true
 
       - name: Report result
         if: always()
+        env:
+          OUTPUTS: ${{ steps.output.outputs.stdout }}
+          RESULT: ${{ steps.apply.outcome }}
+          APPROVER: ${{ github.actor }}
         run: |
           {
             echo "## Apply — prod"
             echo ""
-            echo "**Result:** ${{ steps.apply.outcome == 'success' && 'Succeeded' || 'Failed' }}"
-            echo "**Approved by:** ${{ github.actor }}"
+            echo "**Result:** $RESULT"
+            echo "**Triggered by:** $APPROVER"
             echo ""
             echo "<details><summary>Outputs</summary>"
             echo ""
             echo '```'
-            echo "${{ steps.output.outputs.stdout }}"
+            echo "$OUTPUTS"
             echo '```'
             echo ""
             echo "</details>"
