@@ -1,0 +1,21 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::324404179878:oidc-provider/token.actions.githubusercontent.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                    "token.actions.githubusercontent.com:sub": [
+                        "repo:alexanderchosen@56475753/cob-consumer-platform@1440746664:environment:dev",
+                        "repo:alexanderchosen@56475753/cob-consumer-platform@1440746664:environment:prod"
+                    ]
+                }
+            }
+        }
+    ]
+}
