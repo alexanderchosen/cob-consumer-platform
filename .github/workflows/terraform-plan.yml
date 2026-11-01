@@ -104,6 +104,19 @@ jobs:
           echo "role:         ${{ env.PLAN_ROLE }}"
           echo "expected sub: repo:${{ github.repository }}:pull_request"
 
+      - name: Print actual OIDC claims
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('sts.amazonaws.com');
+            const claims = JSON.parse(
+              Buffer.from(token.split('.')[1], 'base64').toString()
+            );
+            console.log('sub:', claims.sub);
+            console.log('aud:', claims.aud);
+            console.log('iss:', claims.iss);
+            console.log('repository:', claims.repository);
+            
       - name: Assume read-only AWS role via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
