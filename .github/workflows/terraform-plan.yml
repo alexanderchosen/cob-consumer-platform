@@ -20,7 +20,7 @@ permissions:
 # One plan run per branch. A new push supersedes the old run.
 concurrency:
   group: plan-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   TF_VERSION: "1.10.5"
@@ -116,7 +116,7 @@ jobs:
             console.log('aud:', claims.aud);
             console.log('iss:', claims.iss);
             console.log('repository:', claims.repository);
-            
+
       - name: Assume read-only AWS role via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
