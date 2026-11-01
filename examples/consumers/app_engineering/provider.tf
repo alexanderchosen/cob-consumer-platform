@@ -3,11 +3,11 @@ terraform {
 
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
       version = "~> 6.0"
     }
     random = {
-      source = "hashicorp/random"
+      source  = "hashicorp/random"
       version = "~> 3.6"
     }
   }
@@ -18,9 +18,9 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project = var.project
+      Project     = var.project
       Environment = var.environment
-      Owner = var.owner
+      Owner       = var.owner
     }
   }
 }

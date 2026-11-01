@@ -1,0 +1,226 @@
+name: Terraform Plan
+
+# Stage 1 of the pipeline: continuous integration.
+#
+# Runs on every pull request targeting main. Proves the change is
+# well-formed, valid, and shows reviewers exactly what it would do
+# to each environment — without applying anything.
+#
+# No paths filter: a skipped required check blocks a PR forever,
+# so every PR runs every check.
+
+on:
+  pull_request:
+    branches: [main]
+
+# Default to least privilege. Jobs that need more ask for it.
+permissions:
+  contents: read
+
+# One plan run per branch. A new push supersedes the old run.
+concurrency:
+  group: plan-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TF_VERSION: "1.10.5"
+  AWS_REGION: "eu-north-1"
+  PLAN_ROLE: "arn:aws:iam::324404179878:role/cob-oidc-plan"
+
+jobs:
+  # ---------------------------------------------------------------
+  # Formatting — repo-wide, no AWS, ~20 seconds
+  # ---------------------------------------------------------------
+  fmt:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive -diff
+
+  # ---------------------------------------------------------------
+  # Validation — every root module, including examples.
+  # -backend=false means no credentials and no state access.
+  # ---------------------------------------------------------------
+  validate:
+    name: Validate ${{ matrix.dir }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir:
+          - environments/dev
+          - environments/prod
+          - examples/consumers/app_engineering
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: terraform init (no backend)
+        working-directory: ${{ matrix.dir }}
+        run: terraform init -backend=false -input=false
+
+      - name: terraform validate
+        working-directory: ${{ matrix.dir }}
+        run: terraform validate
+
+  # ---------------------------------------------------------------
+  # Plan — real state, read-only role, one job per environment
+  # ---------------------------------------------------------------
+  plan:
+    name: Plan ${{ matrix.environment }}
+    needs: [fmt, validate]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write        # required to request the OIDC token
+      pull-requests: write   # required to post the plan comment
+
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, prod]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # TEMPORARY — remove once OIDC is confirmed working.
+      # Prints the claim values AWS matches the trust policy against.
+      - name: Debug OIDC claim
+        run: |
+          echo "repository:   ${{ github.repository }}"
+          echo "event:        ${{ github.event_name }}"
+          echo "ref:          ${{ github.ref }}"
+          echo "role:         ${{ env.PLAN_ROLE }}"
+          echo "expected sub: repo:${{ github.repository }}:pull_request"
+
+      - name: Print actual OIDC claims
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('sts.amazonaws.com');
+            const claims = JSON.parse(
+              Buffer.from(token.split('.')[1], 'base64').toString()
+            );
+            console.log('sub:', claims.sub);
+            console.log('aud:', claims.aud);
+            console.log('iss:', claims.iss);
+            console.log('repository:', claims.repository);
+            
+      - name: Assume read-only AWS role via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.PLAN_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: cob-plan-${{ matrix.environment }}-${{ github.run_id }}
+
+      - name: Confirm assumed identity
+        run: aws sts get-caller-identity
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: terraform init
+        working-directory: environments/${{ matrix.environment }}
+        run: terraform init -input=false
+
+      # -lock=false: the plan role cannot write, so it cannot take a
+      # state lock. Plan does not mutate state, so there is nothing
+      # to protect. The apply job locks normally.
+      # -detailed-exitcode: 0 = no changes, 1 = error, 2 = changes.
+      - name: terraform plan
+        id: plan
+        working-directory: environments/${{ matrix.environment }}
+        run: terraform plan -lock=false -no-color -input=false -detailed-exitcode
+        continue-on-error: true
+
+      - name: Publish plan to pull request
+        uses: actions/github-script@v7
+        env:
+          PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
+          PLAN_STDERR: ${{ steps.plan.outputs.stderr }}
+          EXITCODE: ${{ steps.plan.outputs.exitcode }}
+        with:
+          script: |
+            const env      = '${{ matrix.environment }}';
+            const marker   = `<!-- cob-plan:${env} -->`;
+            const exitcode = process.env.EXITCODE;
+
+            let verdict;
+            if (exitcode === '0') verdict = 'No changes. Infrastructure matches configuration.';
+            else if (exitcode === '2') verdict = 'Changes detected. Review before approving.';
+            else verdict = 'Plan failed. See the job log.';
+
+            let body = exitcode === '1'
+              ? (process.env.PLAN_STDERR || '(no error output)')
+              : (process.env.PLAN_STDOUT || '(no plan output)');
+
+            const LIMIT = 60000;
+            let truncated = '';
+            if (body.length > LIMIT) {
+              body = body.slice(-LIMIT);
+              truncated = '\n\n> Output truncated. Full plan is in the job log.';
+            }
+
+            const comment = [
+              marker,
+              `### Terraform plan — \`${env}\``,
+              '',
+              verdict,
+              '',
+              '<details><summary>Show plan</summary>',
+              '',
+              '```terraform',
+              body,
+              '```',
+              '',
+              '</details>',
+              truncated,
+              '',
+              `_Commit \`${context.sha.slice(0,7)}\` · workflow \`${context.workflow}\`_`
+            ].join('\n');
+
+            // Update the existing comment for this environment rather
+            // than adding a new one on every push.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
+
+      # The plan step swallows failures so the comment can be posted.
+      # Fail the job here so the check goes red and merge is blocked.
+      - name: Fail job if plan errored
+        if: steps.plan.outputs.exitcode == '1'
+        run: |
+          echo "terraform plan failed for ${{ matrix.environment }}"
+          exit 1
