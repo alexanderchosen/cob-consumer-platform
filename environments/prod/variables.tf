@@ -1,10 +1,10 @@
 variable "project" {
-  type        = string
-  default     = "cob"
+  type    = string
+  default = "cob"
 }
 
 variable "environment" {
-  type        = string
+  type = string
 
   validation {
     condition     = contains(["dev", "prod"], var.environment)
@@ -13,16 +13,16 @@ variable "environment" {
 }
 
 variable "owner" {
-  type        = string
+  type = string
 }
 
 variable "aws_region" {
-  type        = string
-  default     = "eu-north-1"
+  type    = string
+  default = "eu-north-1"
 }
 
 variable "lifecycle_days" {
-  type        = number
+  type = number
 
   validation {
     condition     = var.lifecycle_days > 0
@@ -31,7 +31,7 @@ variable "lifecycle_days" {
 }
 
 variable "crawler_schedule" {
-  type        = string
+  type = string
 }
 
 variable "dataset_name" {
