@@ -54,10 +54,10 @@ locals {
 
 resource "aws_s3_object" "seed" {
   for_each = local.datasets
-  bucket = module.lake.bucket_name
-  key    = "raw/${each.key}/${each.value}"
-  source = "${path.module}/../../docs/test_data/${each.value}"
-  etag   = filemd5("${path.module}/../../docs/test_data/${each.value}")
+  bucket   = module.lake.bucket_name
+  key      = "raw/${each.key}/${each.value}"
+  source   = "${path.module}/../../docs/test_data/${each.value}"
+  etag     = filemd5("${path.module}/../../docs/test_data/${each.value}")
 }
 
 
@@ -68,7 +68,7 @@ resource "aws_s3_object" "seed" {
 # encrypted results. One crawler yields one table per sub-prefix.
 # ---------------------------------------------------------------
 module "analytics" {
-  source = "git::https://github.com/alexanderchosen/cob-modules-platform.git//modules/data-platform?ref=v1.0.0"
+  source             = "git::https://github.com/alexanderchosen/cob-modules-platform.git//modules/data-platform?ref=v1.0.0"
   name_prefix        = "${var.project}-${var.environment}-data"
   purpose            = "retail-analytics"
   source_bucket_arn  = module.lake.bucket_arn
