@@ -37,7 +37,7 @@ module "lake" {
   data_classification = "internal"
   enable_versioning   = true
   lifecycle_days      = var.lifecycle_days
-}
+
 
 # ---------------------------------------------------------------
 # Seed datasets
