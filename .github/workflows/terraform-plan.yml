@@ -116,7 +116,7 @@ jobs:
             console.log('aud:', claims.aud);
             console.log('iss:', claims.iss);
             console.log('repository:', claims.repository);
-            
+
       - name: Assume read-only AWS role via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:

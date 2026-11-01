@@ -1,0 +1,208 @@
+name: Terraform Apply
+
+# Stages 2 and 3 of the pipeline: review gate and continuous delivery.
+#
+# Runs only on pushes to main — that is, on merged pull requests.
+# dev applies automatically. prod pauses for a named reviewer, who
+# reads the plan published by the plan-prod job before approving.
+#
+# Authentication: GitHub OIDC. The apply role's trust policy requires
+# the token subject to contain environment:dev or environment:prod.
+# GitHub only issues that subject to a job declaring that environment,
+# and such a job cannot start until its reviewer approves. Approval is
+# therefore a precondition for obtaining AWS write credentials.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # manual re-run, same gates apply
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: "1.10.5"
+  AWS_REGION: "eu-north-1"
+  PLAN_ROLE: "arn:aws:iam::324404179878:role/cob-oidc-plan"
+  APPLY_ROLE: "arn:aws:iam::324404179878:role/cob-oidc-apply"
+
+jobs:
+  # ---------------------------------------------------------------
+  # dev — applies automatically on merge
+  # ---------------------------------------------------------------
+  apply-dev:
+    name: Apply dev
+    runs-on: ubuntu-latest
+    environment: dev          # required for the OIDC subject claim
+
+    # Never cancel an apply in flight: a half-applied change leaves
+    # state and reality out of step. Queue instead.
+    concurrency:
+      group: apply-dev
+      cancel-in-progress: false
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assume apply role via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.APPLY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: cob-apply-dev-${{ github.run_id }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: terraform init
+        working-directory: environments/dev
+        run: terraform init -input=false
+
+      # State is locked for the duration. A second run against the
+      # same state waits rather than corrupting it.
+      - name: terraform apply
+        id: apply
+        working-directory: environments/dev
+        run: terraform apply -auto-approve -input=false -no-color
+
+      - name: terraform output
+        id: output
+        working-directory: environments/dev
+        run: terraform output -no-color
+
+      - name: Report result
+        if: always()
+        run: |
+          {
+            echo "## Apply — dev"
+            echo ""
+            echo "**Result:** ${{ steps.apply.outcome == 'success' && 'Succeeded' || 'Failed' }}"
+            echo ""
+            echo "<details><summary>Outputs</summary>"
+            echo ""
+            echo '```'
+            echo "${{ steps.output.outputs.stdout }}"
+            echo '```'
+            echo ""
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------
+  # prod plan — published for the reviewer BEFORE the approval gate
+  # ---------------------------------------------------------------
+  plan-prod:
+    name: Plan prod
+    needs: apply-dev          # prod only proceeds if dev succeeded
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assume read-only plan role via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.PLAN_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: cob-planprod-${{ github.run_id }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: terraform init
+        working-directory: environments/prod
+        run: terraform init -input=false
+
+      - name: terraform plan
+        id: plan
+        working-directory: environments/prod
+        run: terraform plan -lock=false -no-color -input=false -detailed-exitcode
+        continue-on-error: true
+
+      - name: Publish plan for reviewer
+        run: |
+          {
+            echo "## Plan — prod (awaiting approval)"
+            echo ""
+            echo "Review this plan, then approve the **Apply prod** job."
+            echo ""
+            echo '```terraform'
+            echo "${{ steps.plan.outputs.stdout }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if plan errored
+        if: steps.plan.outputs.exitcode == '1'
+        run: exit 1
+
+  # ---------------------------------------------------------------
+  # prod apply — blocked until a required reviewer approves
+  # ---------------------------------------------------------------
+  apply-prod:
+    name: Apply prod
+    needs: plan-prod
+    runs-on: ubuntu-latest
+    environment: prod         # required reviewers configured here
+
+    concurrency:
+      group: apply-prod
+      cancel-in-progress: false
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assume apply role via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.APPLY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: cob-apply-prod-${{ github.run_id }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: terraform init
+        working-directory: environments/prod
+        run: terraform init -input=false
+
+      - name: terraform apply
+        id: apply
+        working-directory: environments/prod
+        run: terraform apply -auto-approve -input=false -no-color
+
+      - name: terraform output
+        id: output
+        working-directory: environments/prod
+        run: terraform output -no-color
+
+      - name: Report result
+        if: always()
+        run: |
+          {
+            echo "## Apply — prod"
+            echo ""
+            echo "**Result:** ${{ steps.apply.outcome == 'success' && 'Succeeded' || 'Failed' }}"
+            echo "**Approved by:** ${{ github.actor }}"
+            echo ""
+            echo "<details><summary>Outputs</summary>"
+            echo ""
+            echo '```'
+            echo "${{ steps.output.outputs.stdout }}"
+            echo '```'
+            echo ""
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
