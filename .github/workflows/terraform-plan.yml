@@ -25,7 +25,7 @@ concurrency:
 env:
   TF_VERSION: "1.10.5"
   AWS_REGION: "eu-north-1"
-  PLAN_ROLE: "arn:aws:iam::324404179878:role/cob-git-plan"
+  PLAN_ROLE: "arn:aws:iam::324404179878:role/cob-oidc-plan"
 
 jobs:
   # ---------------------------------------------------------------
