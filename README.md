@@ -74,159 +74,21 @@ The `?ref=v1.0.0` is the contract. Platform Engineering can merge whatever they 
 
 ### Delivery pipeline and trust boundaries
 
-```mermaid
-flowchart TD
-    classDef repo      fill:#1e293b,stroke:#60a5fa,stroke-width:2px,color:#e2e8f0
-    classDef nocreds   fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#d1fae5
-    classDef needcreds fill:#1e3a8a,stroke:#93c5fd,stroke-width:2px,color:#dbeafe
-    classDef gate      fill:#7c2d12,stroke:#fb923c,stroke-width:3px,color:#ffedd5
-    classDef iam       fill:#713f12,stroke:#fbbf24,stroke-width:2px,color:#fef3c7
-    classDef infra     fill:#312e81,stroke:#a5b4fc,stroke-width:2px,color:#e0e7ff
-
-    subgraph SRC["SOURCE — two repositories"]
-        direction LR
-        MOD[("cob-modules-platform<br/>networking · iam · s3 · ec2<br/>ecs · rds · data-platform<br/><b>released as tag v1.0.0</b>")]
-        CON[("cob-consumer-platform<br/>environments/dev<br/>environments/prod<br/>examples/consumers")]
-        MOD ==>|"source = git::…//modules/NAME?ref=v1.0.0<br/>a version bump is a reviewed code change"| CON
-    end
-
-    CON --> PR
-
-    subgraph CI["PULL REQUEST — continuous integration"]
-        direction TB
-        PR[/"Pull request opened<br/>targeting main"/]
-        FMT["terraform fmt -check<br/>repo-wide"]
-        VAL["terraform validate<br/>dev · prod · examples<br/>init -backend=false"]
-        PD["terraform plan — dev<br/>-lock=false"]
-        PP["terraform plan — prod<br/>-lock=false"]
-        CMT[/"Plan published as a<br/>pull request comment"/]
-
-        PR --> FMT --> VAL
-        VAL --> PD
-        VAL --> PP
-        PD --> CMT
-        PP --> CMT
-    end
-
-    CMT --> L1
-
-    L1{{"LOCK 1 — BRANCH PROTECTION<br/>6 required status checks<br/>1 approving review<br/>no direct push to main<br/>branch must be up to date<br/>stale approvals dismissed"}}
-
-    L1 -->|"all checks green + approved"| MERGE[/"Merge to main"/]
-    L1 -.->|"any check red<br/>merge button disabled"| STOP1>"CHANGE BLOCKED"]
-
-    MERGE --> AD
-
-    subgraph CD["MERGE TO MAIN — continuous delivery"]
-        direction TB
-        AD["apply dev<br/>environment: dev<br/>auto-applies"]
-        PPR["plan prod<br/>published to run summary<br/>for the reviewer"]
-        L2{{"LOCK 2 — ENVIRONMENT APPROVAL<br/>required reviewer<br/>deployment branch: main only<br/>job cannot start until approved"}}
-        AP["apply prod<br/>environment: prod"]
-
-        AD -->|"dev succeeded"| PPR --> L2
-        L2 -->|"human approves<br/>against a visible plan"| AP
-        L2 -.->|"not approved"| STOP2>"DEPLOYMENT BLOCKED"]
-    end
-
-    subgraph AWS["AWS — eu-north-1"]
-        direction TB
-        OIDC[("OIDC identity provider<br/>token.actions.githubusercontent.com<br/>audience: sts.amazonaws.com")]
-        RPLAN["cob-oidc-plan<br/><b>ReadOnlyAccess</b>"]
-        RAPPLY["cob-oidc-apply<br/><b>AdministratorAccess</b>"]
-        STATE[("Terraform state bucket<br/>versioned · encrypted<br/>public access blocked<br/>data-platform/dev · data-platform/prod")]
-        DEVI["dev data platform"]
-        PRODI["prod data platform"]
-
-        OIDC --> RPLAN
-        OIDC --> RAPPLY
-        RAPPLY --> DEVI
-        RAPPLY --> PRODI
-        RPLAN -.->|"read"| STATE
-        RAPPLY -->|"read + write + lock"| STATE
-    end
-
-    PD -.->|"sub: repo:OWNER@ID/REPO@ID:*"| RPLAN
-    PP -.->|"same read-only role"| RPLAN
-    PPR -.->|"read-only"| RPLAN
-    AD ==>|"sub: …:environment:dev"| RAPPLY
-    AP ==>|"sub: …:environment:prod"| RAPPLY
-
-    L3{{"LOCK 3 — AWS TRUST POLICY<br/>apply role requires environment:dev or environment:prod<br/>in the OIDC subject claim. GitHub issues that claim only to a<br/>job declaring the environment, and such a job cannot start<br/>until approved. Approval is a precondition for credentials."}}
-    L3 -.-> RAPPLY
-
-    class MOD,CON repo
-    class FMT,VAL nocreds
-    class PD,PP,PPR,AD,AP needcreds
-    class L1,L2,L3 gate
-    class OIDC,RPLAN,RAPPLY iam
-    class STATE,DEVI,PRODI infra
-```
+![COB Delivery Pipeline](docs/images/01-pipeline.svg)
 
 **How to read it.** Green jobs need no AWS credentials at all — `fmt` and `validate` run with `init -backend=false`, so a syntax error fails in about twenty seconds without one cloud API call. The dotted arrows carry the real OIDC subject claims. The three hexagonal locks sit on the critical path: no line can be traced from pull request to production infrastructure that bypasses all three.
 
 ### The provisioned data platform
 
 Identical in shape for `dev` and `prod`; only input values and state keys differ.
+![COB provisioned data platform](docs/images/02-data-platform.png)
 
-```mermaid
-flowchart TD
-    classDef cobmod  fill:#1e3a8a,stroke:#93c5fd,stroke-width:2px,color:#dbeafe
-    classDef consumer fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#d1fae5
-    classDef catalog fill:#312e81,stroke:#a5b4fc,stroke-width:2px,color:#e0e7ff
-    classDef iam     fill:#713f12,stroke:#fbbf24,stroke-width:2px,color:#fef3c7
-
-    subgraph LAKE["LANDING ZONE"]
-        BUCKET[("S3 lake bucket<br/><b>COB: modules/s3</b><br/>encrypted · versioned<br/>public access blocked<br/>lifecycle 30d dev / 365d prod<br/>globally unique name suffix")]
-        SEED[/"raw/orders/orders.csv<br/>raw/customers/customers.csv<br/>raw/products/products.csv<br/><b>consumer data, not platform</b>"/]
-        SEED -->|"uploaded into"| BUCKET
-    end
-
-    subgraph CATALOGUE["CATALOGUE AND QUERY"]
-        CRAWL["Glue crawler<br/><b>COB: modules/data-platform</b><br/>source_prefix = raw/<br/>one table per sub-prefix"]
-        CROLE["Crawler IAM role<br/>scoped to the raw/ prefix only<br/>never the whole bucket"]
-        GLUE[("Glue Data Catalog<br/>orders · customers · products")]
-        WG["Athena workgroup<br/>results always encrypted<br/>workgroup config enforced"]
-        RESULTS[("Athena results bucket<br/><b>COB: modules/s3</b><br/>composed by data-platform<br/>the platform reusing itself")]
-
-        CRAWL --> GLUE --> WG --> RESULTS
-        CROLE -.->|"assumed by"| CRAWL
-    end
-
-    BUCKET ==>|"crawled"| CRAWL
-    WG ==>|"SQL across all three tables"| OUT[/"Revenue by customer segment<br/>and product category"/]
-
-    class BUCKET,CRAWL,WG,RESULTS cobmod
-    class SEED,OUT consumer
-    class GLUE catalog
-    class CROLE iam
-```
 
 Every box is tagged with the COB module that provisioned it. Nothing in the data platform was hand-built around the platform.
 
 ### Environment isolation
 
-```mermaid
-flowchart LR
-    classDef env   fill:#1e3a8a,stroke:#93c5fd,stroke-width:2px,color:#dbeafe
-    classDef state fill:#312e81,stroke:#a5b4fc,stroke-width:2px,color:#e0e7ff
-
-    subgraph D["environments/dev"]
-        DC["identical module code<br/>environment = dev<br/>lifecycle_days = 30<br/>crawler 03:00 UTC"]
-    end
-
-    subgraph P["environments/prod"]
-        PC["identical module code<br/>environment = prod<br/>lifecycle_days = 365<br/>crawler 02:00 UTC"]
-    end
-
-    SB[("Terraform state bucket<br/>versioned · encrypted")]
-
-    DC -->|"key = data-platform/dev/terraform.tfstate"| SB
-    PC -->|"key = data-platform/prod/terraform.tfstate"| SB
-
-    class DC,PC env
-    class SB state
-```
+![COB Environment Isolation](docs/images/03-environment-isolation.svg)
 
 ---
 
@@ -307,15 +169,16 @@ ORDER BY revenue_ngn DESC;
 ```
 
 <!-- IMAGE: Athena dev workgroup, query editor showing the three tables and customers columns -->
-![Athena query editor — dev](docs/images/athena-dev-query.png)
+![Athena query editor — dev](docs/images/athenaquery4dev.png)
+
 **Dev environment — Glue catalogue showing `customers`, `orders`, `products` with correctly inferred column names.**
 
 <!-- IMAGE: Athena prod workgroup, query editor with the join query, workgroup cob-data-eng-pro... -->
-![Athena query editor — prod](docs/images/athena-prod-query.png)
+![Athena query editor — prod](docs/images/Athena-prod-query-result.png)
 **Prod environment — the same join running against the `cob_data_eng_prod_data_retail_analytics` database in the prod workgroup.**
 
 <!-- IMAGE: Athena prod results, 6 rows, wholesale/power 4380000 etc -->
-![Athena results — prod](docs/images/athena-prod-results.png)
+![Athena results — prod](docs/images/showing-query-result-tables.png)
 **Six rows returned, 1.78 KB scanned. Revenue by customer segment and product category, joined across three independently catalogued CSV datasets.**
 
 ---
@@ -339,11 +202,11 @@ The plan jobs declare `needs: [fmt, validate]`, so a repo that fails a twenty-se
 Each plan is posted to the pull request as a comment that updates in place, so pushing five times leaves two current comments rather than ten historical ones.
 
 <!-- IMAGE: PR #1 conversation showing both github-actions bot plan comments -->
-![Plan comments on a pull request](docs/images/pr-plan-comments.png)
+![Plan comments on a pull request](docs/images/Plan-Prod-summary-showing-total-number-of-terraform-changes.png)
 **Both plans published to the pull request. Dev reports no changes; prod reports changes requiring review. Each carries the commit SHA it was generated from.**
 
 <!-- IMAGE: PR #1 "All checks have passed, 6 successful checks" with merge enabled -->
-![Six checks passing](docs/images/pr-checks-passed.png)
+![Six Checks Passed](docs/images/6-checks-passed-for-ci-add-plan-workflow.png)
 **All six required checks green.**
 
 ### `terraform-apply.yml` — review gate and continuous delivery
@@ -371,7 +234,7 @@ git checkout -b feature/my-change
 
 # edit environments/dev/main.tf, environments/prod/main.tf, tfvars, …
 
-terraform fmt -recursive          # keeps the format check green
+terraform fmt -recursive    # keeps the format check green
 git add .
 git commit -m "Describe the change"
 git push -u origin feature/my-change
@@ -385,6 +248,7 @@ Open a pull request against `main`. Then:
 4. **Merge.** The apply workflow starts automatically.
 5. **Watch the Actions tab.** `Apply dev` runs, `Plan prod` publishes its plan, and `Apply prod` pauses.
 6. **Review the prod plan in the run summary, then click *Review deployments* → *prod* → *Approve and deploy*.**
+
 
 ### Re-running without a code change
 
@@ -410,19 +274,19 @@ Open a pull request against `main`. Then:
 A change is opened as a pull request, the plans are published, the checks pass, a reviewer approves, the change merges, dev applies automatically, and prod waits for a deployment approval.
 
 <!-- IMAGE: PR #1 header with 5 commits, 6 checks, 14 files changed -->
-![Pull request overview](docs/images/pr-overview.png)
+![Pull request overview](docs/images/show-review-required-for-ci-add-plan-workflow.png)
 **The pull request that introduced the plan workflow.**
 
 <!-- IMAGE: Review required + Merging is blocked, with all 6 Required badges -->
-![Review required](docs/images/pr-review-required.png)
+![Review required](docs/images/Terraform-Apply-requesting-review.png)
 **All six checks green and merging still blocked: branch protection requires an approving review from a second person with write access. Note the `Required` badge against each check.**
 
 <!-- IMAGE: Terraform Apply run 41313887302, three jobs green -->
-![Apply workflow complete](docs/images/apply-run-complete.png)
+![Apply workflow complete](docs/images/merge-pull-request-for_ci-fix-apply-workflow.png)
 **The apply workflow after merge: dev applied, prod planned, prod applied following approval.**
 
 <!-- IMAGE: Apply prod summary — Result success, Triggered by alexanderchosen, outputs -->
-![Apply prod summary](docs/images/apply-prod-summary.png)
+![Apply prod summary](docs/images/Apply-prod-request-approved.png)
 **Prod outputs after a gated apply — the lake bucket, Glue database, Athena workgroup, crawler and encrypted results bucket, all named for the prod environment.**
 
 ### Scenario B — invalid Terraform
@@ -432,21 +296,21 @@ Two different classes of error were introduced deliberately, and each was caught
 **B1 — a syntax error** in `environments/dev/main.tf` (an unclosed `module` block, which Terraform reported as a reserved block name because the following `locals` block was absorbed into it).
 
 <!-- IMAGE: Validate environments/dev failed — Reserved block type name in module block, locals -->
-![Validation failure](docs/images/scenario-b-validate-fail.png)
+![Validation failure!(docs/images/format-check-error.png)]
 **`Validate environments/dev` fails during `terraform init -backend=false`, before any AWS credential is requested.**
 
 <!-- IMAGE: PR #4 — 1 failing, 1 skipped, 2 expected, 3 successful; merge blocked -->
-![Merge blocked by failing checks](docs/images/scenario-b-merge-blocked.png)
+![Merge blocked by failing checks!(docs/images/format-check-failed-test.png)]
 **The plan jobs never ran — `needs: [fmt, validate]` prevented them. They sit as `Expected — Waiting for status to be reported`, so the required checks can never report and the merge stays blocked. An engineer cannot merge a change simply because the Terraform looks correct.**
 
 **B2 — a semantic error**: `lifecycle_days = -5` in `environments/dev/terraform.tfvars`. Syntactically valid, so formatting and validation both pass. It is rejected by the module's own `validation` block at plan time.
 
 <!-- IMAGE: commit 9cf3073 — 5 successful and 1 failing; Plan dev failing, Plan prod successful -->
-![Semantic error caught at plan](docs/images/scenario-b-semantic.png)
+![Semantic error caught at plan](docs/images/syntax-error-checks-failure.png)
 **`Format check`, both `Validate` jobs and `Plan prod` all pass. Only `Plan dev` fails — because only dev's inputs were invalid. Shared checks are repo-wide; plans are per-environment; a single failure still blocks the merge.**
 
 <!-- IMAGE: Plan dev job steps showing "Fail job if plan errored" red -->
-![Plan failure surfaces as a red check](docs/images/scenario-b-plan-fail-step.png)
+![Plan failure surfaces as a red check](docs/images/syntax-error-failure-summary.png)
 **The plan step uses `continue-on-error` so the failure can still be published to the pull request; the final step then fails the job so the check goes red.**
 
 ### Scenario C — repeatability, no changes required
@@ -454,20 +318,20 @@ Two different classes of error were introduced deliberately, and each was caught
 The workflow was re-run against an unchanged environment.
 
 <!-- IMAGE: Plan prod summary — "No changes. Infrastructure matches configuration." with refreshing state lines -->
-![Unchanged plan](docs/images/scenario-c-no-changes.png)
+![Unchanged plan](docs/images/Plan-Prod-summary-showing-total-number-of-terraform-changes.png)
 **`terraform plan -detailed-exitcode` returns 0, and the pipeline states plainly that infrastructure matches configuration. The approval gate still engages — an unchanged plan is still a deployment, and is still reviewed.**
 
 ### The approval gate
 
 <!-- IMAGE: Terraform Apply #4 Waiting — "alexanderchosen requested your review to deploy to prod" + Review deployments -->
-![Deployment awaiting review](docs/images/approval-waiting.png)
+![Deployment awaiting review](docs/images/Apply-prod-request-approved.png)
 **`Apply prod` held in `Waiting`. The job has not started, holds no credentials, and cannot obtain them until a required reviewer approves.**
 
 <!-- IMAGE: Deployment protection rules — requested review row -->
-![Deployment protection rules — requested](docs/images/approval-requested.png)
+![Deployment protection rules — requested](docs/images/show-review-required-for-ci-add-plan-workflow.png)
 
 <!-- IMAGE: Deployment protection rules — approved 2 minutes ago, comment "Apply prod is good to go!!" -->
-![Deployment approved](docs/images/approval-granted.png)
+![Deployment approved](docs/images/merge-pull-request-for_ci-fix-apply-workflow.png)
 **The approval is recorded against the run with the approver, the environment, the timestamp and a comment — an auditable record of who authorised the deployment and when.**
 
 ---
@@ -600,16 +464,16 @@ Nothing validates that `orders.csv` has the expected columns or that quantities 
 
 **GitHub's immutable subject claim breaks every documented OIDC example.** This repository has *Use immutable subject claim* enabled, which rewrites the OIDC `sub` to embed numeric account and repository IDs — `repo:alexanderchosen@56475753/cob-consumer-platform@1440746664` — instead of human-readable names. This is a real security improvement: a rename can no longer silently transfer the ability to assume a role. But the trust policy examples in both AWS and GitHub documentation assume the name-based subject, so role assumption failed while *every* individually verifiable component checked out: provider URL, audience, role ARN, repository name, event type, subject pattern. The resolution was to match the trust policy to the actual claim rather than disable the feature. **AWS returns the same "Not authorized to perform `sts:AssumeRoleWithWebIdentity`" for a role that does not exist as for one whose trust policy rejects you** — so the first debugging step for that error should always be "does this role exist, spelled exactly this way?"
 
-<!-- IMAGE: Plan dev — Assume read-only AWS role via OIDC, repeated "Assuming role with OIDC", Not authorized error -->
-![OIDC assume-role failure](docs/images/oidc-failure.png)
+
+![OIDC assume-role failure](docs/images/OIDC-read-only-role-error.png)
 **The failure mode: a ninety-second retry loop ending in an error that names neither the real cause nor the claim that failed to match.**
 
 **Expression interpolation into shell steps is a script injection vector.** `${{ }}` expressions are substituted into the script text before the shell parses it. A Terraform plan containing `(known after apply)` broke a step with a bash syntax error — and the same mechanism would execute arbitrary commands if the value were attacker-influenced. Every `run:` block in this pipeline now passes values through `env:`.
 
 **A formatting gate decays unless local tooling makes it free.** The first pull request failed `terraform fmt -check` across every `.tf` file in the repository, largely on `=` alignment and missing trailing newlines. The fix is one command; the durable fix is `editor.formatOnSave` with the HashiCorp Terraform extension, so the check never fires again. CI enforces the standard; local tooling makes meeting it automatic.
 
-<!-- IMAGE: Format check failed — No newline at end of file, exit code 3 -->
-![Format check failure](docs/images/fmt-failure.png)
+
+![Format check failure](docs/images/format-check-failed-test.png)
 **`terraform fmt -check` exits 3 when files need formatting — distinct from exit 1, a genuine parse error.**
 
 **Account closure makes state unrecoverable, and that is survivable.** The original AWS account was closed mid-project. The state bucket returned `AllAccessDisabled` — the error S3 gives when the owning account is suspended or closed, which no credential from any account can bypass. The old state was worthless anyway: it mapped configuration to resource IDs in an account whose resources no longer existed. The platform was rebuilt in a fresh account from code alone, which is a stronger claim about the code than any amount of surviving state would have been.
